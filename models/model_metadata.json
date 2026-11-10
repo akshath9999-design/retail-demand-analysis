@@ -1,0 +1,62 @@
+{
+  "split_date": "2011-11-01",
+  "train_samples": 45750,
+  "test_samples": 5850,
+  "best_model": "Gradient Boosting",
+  "best_hyperparameters": {
+    "n_estimators": 100,
+    "min_samples_split": 8,
+    "max_depth": 4,
+    "learning_rate": 0.08
+  },
+  "metrics": {
+    "Linear Regression": {
+      "MAE": 41.2007,
+      "MSE": 5526.23,
+      "RMSE": 74.3386,
+      "R2": 0.2762
+    },
+    "Random Forest": {
+      "MAE": 37.1607,
+      "MSE": 5282.1061,
+      "RMSE": 72.6781,
+      "R2": 0.3082
+    },
+    "Gradient Boosting": {
+      "MAE": 36.6066,
+      "MSE": 5156.8822,
+      "RMSE": 71.8114,
+      "R2": 0.3246
+    },
+    "Tuned Gradient Boosting (Best)": {
+      "MAE": 37.5562,
+      "MSE": 5413.8654,
+      "RMSE": 73.579,
+      "R2": 0.2909
+    }
+  },
+  "features": {
+    "numerical": [
+      "day",
+      "month",
+      "year",
+      "dayofweek",
+      "is_weekend",
+      "weekofyear",
+      "lag_1",
+      "lag_7",
+      "lag_14",
+      "lag_30",
+      "rolling_mean_7",
+      "rolling_mean_14",
+      "rolling_mean_30",
+      "rolling_std_7",
+      "rolling_trend",
+      "cv_7",
+      "AvgUnitPrice"
+    ],
+    "categorical": [
+      "StockCode"
+    ]
+  }
+}

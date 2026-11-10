@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Retail Product Demand Estimation & Stockout Risk Analysis</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+  <!-- Chart.js for Interactive Visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="brand-section">
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-title">DemandIQ</h1>
+          <p class="brand-subtitle">Retail Inventory Intelligence</p>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <button class="nav-item active" data-section="dashboard">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+          <span>Dashboard</span>
+        </button>
+        <button class="nav-item" data-section="forecasting">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+          <span>Demand Forecasting</span>
+        </button>
+        <button class="nav-item" data-section="stockout">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          <span>Stockout Risk Analysis</span>
+        </button>
+        <button class="nav-item" data-section="performance">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>
+          <span>Model Performance</span>
+        </button>
+        <button class="nav-item" data-section="products">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+          <span>Product Catalog</span>
+        </button>
+        <button class="nav-item" data-section="eda">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+          <span>EDA Gallery</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="system-status">
+          <span class="status-indicator"></span>
+          <span id="api-status-text">FastAPI Engine Online</span>
+        </div>
+        <p class="dataset-meta">Dataset: UCI Online Retail</p>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Top Bar -->
+      <header class="top-bar">
+        <div class="header-left">
+          <h2 id="current-section-title">Dashboard Overview</h2>
+          <p id="current-section-desc">Real-time retail inventory intelligence & sales telemetry</p>
+        </div>
+        <div class="header-right">
+          <div class="model-badge">
+            <span class="badge-dot"></span>
+            <span>Best Model: <strong>Gradient Boosting</strong></span>
+          </div>
+          <a href="/docs" target="_blank" class="docs-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            Swagger Docs
+          </a>
+        </div>
+      </header>
+
+      <div class="content-scroll">
+        <!-- ================= SECTION 1: DASHBOARD ================= -->
+        <section id="section-dashboard" class="page-section active">
+          <!-- Metric KPI Cards -->
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <div class="kpi-header">
+                <span class="kpi-label">Total Catalog Products</span>
+                <div class="kpi-icon blue">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline></svg>
+                </div>
+              </div>
+              <div class="kpi-value" id="kpi-total-products">...</div>
+              <div class="kpi-caption">Cleaned SKUs from Online Retail</div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-header">
+                <span class="kpi-label">Total Transactions</span>
+                <div class="kpi-icon green">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                </div>
+              </div>
+              <div class="kpi-value" id="kpi-total-transactions">...</div>
+              <div class="kpi-caption">Valid orders (cancellations filtered)</div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-header">
+                <span class="kpi-label">Total Units Sold</span>
+                <div class="kpi-icon purple">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
+                </div>
+              </div>
+              <div class="kpi-value" id="kpi-total-units">...</div>
+              <div class="kpi-caption">Total demand quantity recorded</div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-header">
+                <span class="kpi-label">Avg Daily Demand</span>
+                <div class="kpi-icon amber">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline></svg>
+                </div>
+              </div>
+              <div class="kpi-value" id="kpi-avg-daily">...</div>
+              <div class="kpi-caption">System-wide daily volume</div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-header">
+                <span class="kpi-label">High Stockout Risk SKUs</span>
+                <div class="kpi-icon red">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path></svg>
+                </div>
+              </div>
+              <div class="kpi-value danger-text" id="kpi-high-risk">...</div>
+              <div class="kpi-caption">Lead demand exceeds current stock</div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-header">
+                <span class="kpi-label">Total Net Revenue</span>
+                <div class="kpi-icon emerald">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                </div>
+              </div>
+              <div class="kpi-value" id="kpi-total-revenue">...</div>
+              <div class="kpi-caption">Historical gross sales (£)</div>
+            </div>
+          </div>
+
+          <!-- Charts Row -->
+          <div class="chart-row">
+            <div class="chart-card full-width">
+              <div class="chart-header">
+                <div>
+                  <h3 class="chart-title">Monthly Retail Sales & Revenue Trajectory</h3>
+                  <p class="chart-subtitle">Aggregate monthly units sold vs total gross sales value (£)</p>
+                </div>
+              </div>
+              <div class="chart-container" style="height: 320px;">
+                <canvas id="monthlySalesChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="chart-row two-cols">
+            <div class="chart-card">
+              <div class="chart-header">
+                <div>
+                  <h3 class="chart-title">Demand by Day of Week</h3>
+                  <p class="chart-subtitle">Distribution of retail shopping patterns</p>
+                </div>
+              </div>
+              <div class="chart-container" style="height: 280px;">
+                <canvas id="dowChart"></canvas>
+              </div>
+            </div>
+
+            <div class="chart-card">
+              <div class="chart-header">
+                <div>
+                  <h3 class="chart-title">Recent 60-Day Demand Volatility</h3>
+                  <p class="chart-subtitle">System-wide daily quantity fluctuation</p>
+                </div>
+              </div>
+              <div class="chart-container" style="height: 280px;">
+                <canvas id="recentDemandChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Top Best Sellers Table -->
+          <div class="table-card">
+            <div class="table-header">
+              <h3 class="chart-title">Top 10 Best-Selling Products</h3>
+              <p class="chart-subtitle">Highest cumulative quantity sold in the historical dataset</p>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Stock Code</th>
+                    <th>Product Description</th>
+                    <th>Units Sold</th>
+                    <th>Total Revenue (£)</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="dashboard-bestsellers-tbody">
+                  <tr><td colspan="6" class="text-center">Loading best sellers...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= SECTION 2: DEMAND FORECASTING ================= -->
+        <section id="section-forecasting" class="page-section">
+          <div class="panel-grid">
+            <!-- Forecast Configuration Form -->
+            <div class="form-card">
+              <div class="card-title-box">
+                <h3 class="chart-title">Configure Demand Forecast</h3>
+                <p class="chart-subtitle">Select a product and future prediction window</p>
+              </div>
+              <form id="forecast-form" class="app-form">
+                <div class="form-group">
+                  <label for="forecast-product-select">Select Product SKU</label>
+                  <select id="forecast-product-select" class="form-control" required>
+                    <option value="" disabled selected>Loading product catalog...</option>
+                  </select>
+                  <small class="form-hint">Choose from 150+ actively modeled retail SKUs</small>
+                </div>
+
+                <div class="form-group">
+                  <label for="forecast-days-input">Forecast Horizon (Days)</label>
+                  <div class="duration-buttons">
+                    <button type="button" class="btn-chip active" data-days="7">7 Days</button>
+                    <button type="button" class="btn-chip" data-days="14">14 Days</button>
+                    <button type="button" class="btn-chip" data-days="30">30 Days</button>
+                    <button type="button" class="btn-chip" data-days="60">60 Days</button>
+                  </div>
+                  <input type="number" id="forecast-days-input" class="form-control mt-2" min="1" max="90" value="14" required>
+                </div>
+
+                <button type="submit" id="btn-run-forecast" class="btn-primary w-100">
+                  <span class="btn-text">Generate Demand Forecast</span>
+                  <div class="spinner d-none" id="forecast-spinner"></div>
+                </button>
+              </form>
+
+              <!-- Selected Product Quick Specs -->
+              <div class="product-quick-specs mt-4" id="forecast-quick-specs" style="display: none;">
+                <h4 class="specs-title">Selected SKU Profile</h4>
+                <div class="spec-row">
+                  <span>Product Code:</span> <strong id="spec-code">-</strong>
+                </div>
+                <div class="spec-row">
+                  <span>Description:</span> <strong id="spec-desc">-</strong>
+                </div>
+                <div class="spec-row">
+                  <span>Avg Unit Price:</span> <strong id="spec-price">-</strong>
+                </div>
+                <div class="spec-row">
+                  <span>Historical Active Days:</span> <strong id="spec-days">-</strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- Forecast Results & Chart -->
+            <div class="results-column">
+              <!-- Summary KPI Cards -->
+              <div class="forecast-kpis" id="forecast-summary-cards" style="display: none;">
+                <div class="kpi-mini-card">
+                  <span class="mini-label">Total Expected Demand</span>
+                  <span class="mini-value" id="f-total-demand">0</span>
+                  <span class="mini-sub">units over horizon</span>
+                </div>
+                <div class="kpi-mini-card">
+                  <span class="mini-label">Average Daily Demand</span>
+                  <span class="mini-value" id="f-avg-daily">0</span>
+                  <span class="mini-sub">units / day</span>
+                </div>
+                <div class="kpi-mini-card">
+                  <span class="mini-label">Peak Demand Day</span>
+                  <span class="mini-value" id="f-peak-demand">0</span>
+                  <span class="mini-sub">max expected surge</span>
+                </div>
+                <div class="kpi-mini-card">
+                  <span class="mini-label">Demand Trajectory</span>
+                  <span class="mini-value trend-badge" id="f-trend-badge">STABLE</span>
+                  <span class="mini-sub" id="f-trend-sub">vs historical baseline</span>
+                </div>
+              </div>
+
+              <!-- Forecast Chart Card -->
+              <div class="chart-card">
+                <div class="chart-header">
+                  <div>
+                    <h3 class="chart-title">Demand Projection vs Recent Baseline</h3>
+                    <p class="chart-subtitle">Autoregressive machine learning forecast rolling forward</p>
+                  </div>
+                </div>
+                <div class="chart-container" style="height: 320px;">
+                  <canvas id="forecastChart"></canvas>
+                </div>
+              </div>
+
+              <!-- Daily Forecast Schedule Table -->
+              <div class="table-card mt-4" id="forecast-schedule-card" style="display: none;">
+                <div class="table-header">
+                  <h3 class="chart-title">Day-by-Day Forecast Schedule</h3>
+                  <p class="chart-subtitle">Predicted daily demand trajectory</p>
+                </div>
+                <div class="table-responsive max-h-300">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Day</th>
+                        <th>Predicted Daily Demand (Units)</th>
+                      </tr>
+                    </thead>
+                    <tbody id="forecast-schedule-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= SECTION 3: STOCKOUT RISK ANALYSIS ================= -->
+        <section id="section-stockout" class="page-section">
+          <div class="disclaimer-banner">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            <div>
+              <strong>Inventory Modeling Architecture:</strong>
+              The raw Online Retail dataset contains historical sales transactions without warehouse stock records.
+              This module applies an explicit, forecast-based inventory simulation rule comparing current available inventory against ML-forecasted lead-time demand.
+            </div>
+          </div>
+
+          <div class="panel-grid">
+            <!-- Stockout Configuration Form -->
+            <div class="form-card">
+              <div class="card-title-box">
+                <h3 class="chart-title">Inventory Risk Parameters</h3>
+                <p class="chart-subtitle">Evaluate risk based on supplier lead time and on-hand stock</p>
+              </div>
+
+              <form id="stockout-form" class="app-form">
+                <div class="form-group">
+                  <label for="stockout-product-select">Target Product SKU</label>
+                  <select id="stockout-product-select" class="form-control" required>
+                    <option value="" disabled selected>Loading products...</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="stockout-inventory-input">Current Available Inventory (Units)</label>
+                  <input type="number" id="stockout-inventory-input" class="form-control" min="0" value="50" required>
+                  <small class="form-hint">Physical stock available in warehouse right now</small>
+                </div>
+
+                <div class="form-group">
+                  <label for="stockout-leadtime-input">Supplier Lead Time (Days)</label>
+                  <input type="number" id="stockout-leadtime-input" class="form-control" min="1" max="90" value="10" required>
+                  <small class="form-hint">Days required for replenishment shipment to arrive</small>
+                </div>
+
+                <div class="form-group">
+                  <label for="stockout-safety-buffer">Configurable Safety Buffer (%)</label>
+                  <select id="stockout-safety-buffer" class="form-control">
+                    <option value="0.10">10% Safety Buffer</option>
+                    <option value="0.20" selected>20% Safety Buffer (Standard)</option>
+                    <option value="0.30">30% Safety Buffer (High Protection)</option>
+                    <option value="0.50">50% Safety Buffer (Volatile)</option>
+                  </select>
+                </div>
+
+                <button type="submit" id="btn-run-stockout" class="btn-primary w-100">
+                  <span class="btn-text">Evaluate Stockout Risk</span>
+                  <div class="spinner d-none" id="stockout-spinner"></div>
+                </button>
+              </form>
+            </div>
+
+            <!-- Risk Decision Display -->
+            <div class="results-column">
+              <div class="risk-summary-card" id="risk-banner-card">
+                <div class="risk-badge-box">
+                  <span class="risk-label">Calculated Stockout Status</span>
+                  <div class="risk-pill-large" id="risk-status-pill">AWAITING INPUT</div>
+                </div>
+                <div class="risk-description-box" id="risk-explanation-text">
+                  Configure current inventory and supplier lead time to evaluate whether future demand will exhaust warehouse stock.
+                </div>
+              </div>
+
+              <!-- Metric Cards -->
+              <div class="stockout-metrics-grid" id="stockout-metrics-box" style="display: none;">
+                <div class="kpi-mini-card">
+                  <span class="mini-label">Expected Lead-Time Demand</span>
+                  <span class="mini-value text-primary" id="so-lead-demand">0</span>
+                  <span class="mini-sub">forecasted units consumed</span>
+                </div>
+
+                <div class="kpi-mini-card">
+                  <span class="mini-label">Available Inventory</span>
+                  <span class="mini-value" id="so-avail-inv">0</span>
+                  <span class="mini-sub">units currently in stock</span>
+                </div>
+
+                <div class="kpi-mini-card">
+                  <span class="mini-label">Estimated Remaining Stock</span>
+                  <span class="mini-value" id="so-remain-inv">0</span>
+                  <span class="mini-sub">units at end of lead time</span>
+                </div>
+
+                <div class="kpi-mini-card">
+                  <span class="mini-label">Suggested Replenishment</span>
+                  <span class="mini-value text-danger" id="so-reorder-qty">0</span>
+                  <span class="mini-sub">units to order immediately</span>
+                </div>
+
+                <div class="kpi-mini-card">
+                  <span class="mini-label">Inventory Runway</span>
+                  <span class="mini-value" id="so-runway-days">0</span>
+                  <span class="mini-sub">estimated days until stockout</span>
+                </div>
+
+                <div class="kpi-mini-card">
+                  <span class="mini-label">Safety Buffer Allocated</span>
+                  <span class="mini-value" id="so-safety-buf">0</span>
+                  <span class="mini-sub">reserve units protected</span>
+                </div>
+              </div>
+
+              <!-- Replenishment Guidance Callout -->
+              <div class="action-card mt-4" id="stockout-action-card" style="display: none;">
+                <h4 class="action-title" id="action-title-text">Recommended Operational Action</h4>
+                <p id="action-body-text" class="action-body"></p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= SECTION 4: MODEL PERFORMANCE ================= -->
+        <section id="section-performance" class="page-section">
+          <!-- Model Comparison Metrics Cards -->
+          <div class="models-grid" id="models-comparison-grid">
+            <div class="model-stat-card">
+              <div class="model-stat-header">
+                <h4>Linear Regression</h4>
+                <span class="model-type-tag">Baseline</span>
+              </div>
+              <div class="stat-metrics">
+                <div class="stat-row"><span>MAE:</span> <strong id="m-lr-mae">...</strong></div>
+                <div class="stat-row"><span>RMSE:</span> <strong id="m-lr-rmse">...</strong></div>
+                <div class="stat-row"><span>R² Score:</span> <strong id="m-lr-r2">...</strong></div>
+              </div>
+            </div>
+
+            <div class="model-stat-card">
+              <div class="model-stat-header">
+                <h4>Random Forest</h4>
+                <span class="model-type-tag">Ensemble</span>
+              </div>
+              <div class="stat-metrics">
+                <div class="stat-row"><span>MAE:</span> <strong id="m-rf-mae">...</strong></div>
+                <div class="stat-row"><span>RMSE:</span> <strong id="m-rf-rmse">...</strong></div>
+                <div class="stat-row"><span>R² Score:</span> <strong id="m-rf-r2">...</strong></div>
+              </div>
+            </div>
+
+            <div class="model-stat-card highlight">
+              <div class="model-stat-header">
+                <h4>Gradient Boosting</h4>
+                <span class="model-type-tag winner">Champion</span>
+              </div>
+              <div class="stat-metrics">
+                <div class="stat-row"><span>MAE:</span> <strong id="m-gb-mae">...</strong></div>
+                <div class="stat-row"><span>RMSE:</span> <strong id="m-gb-rmse">...</strong></div>
+                <div class="stat-row"><span>R² Score:</span> <strong id="m-gb-r2">...</strong></div>
+              </div>
+            </div>
+
+            <div class="model-stat-card">
+              <div class="model-stat-header">
+                <h4>Tuned Gradient Boosting</h4>
+                <span class="model-type-tag">Optimized</span>
+              </div>
+              <div class="stat-metrics">
+                <div class="stat-row"><span>MAE:</span> <strong id="m-tuned-mae">...</strong></div>
+                <div class="stat-row"><span>RMSE:</span> <strong id="m-tuned-rmse">...</strong></div>
+                <div class="stat-row"><span>R² Score:</span> <strong id="m-tuned-r2">...</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Comparison Bar Chart & Validation Image -->
+          <div class="chart-row two-cols mt-4">
+            <div class="chart-card">
+              <div class="chart-header">
+                <div>
+                  <h3 class="chart-title">Error Metric Comparison (Lower is Better)</h3>
+                  <p class="chart-subtitle">Mean Absolute Error (MAE) and Root Mean Squared Error (RMSE)</p>
+                </div>
+              </div>
+              <div class="chart-container" style="height: 320px;">
+                <canvas id="modelComparisonChart"></canvas>
+              </div>
+            </div>
+
+            <div class="chart-card">
+              <div class="chart-header">
+                <div>
+                  <h3 class="chart-title">R-Squared (R²) Goodness of Fit</h3>
+                  <p class="chart-subtitle">Proportion of future demand variance explained</p>
+                </div>
+              </div>
+              <div class="chart-container" style="height: 320px;">
+                <canvas id="r2ComparisonChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Actual vs Predicted Plot -->
+          <div class="table-card mt-4">
+            <div class="table-header">
+              <h3 class="chart-title">Validation Performance: Unseen Future Demand (Nov 1 - Dec 9, 2011)</h3>
+              <p class="chart-subtitle">Chronological validation split comparing actual recorded sales against model forecasts</p>
+            </div>
+            <div class="p-4 text-center">
+              <img src="/graphs/actual_vs_predicted.png" alt="Actual vs Predicted Demand" class="img-responsive rounded shadow-sm">
+            </div>
+          </div>
+
+          <!-- Scientific Methodology Explanations -->
+          <div class="methodology-card mt-4">
+            <h3 class="chart-title mb-3">Model Selection & Architecture Rationale</h3>
+            <div class="method-grid">
+              <div class="method-item">
+                <h5>1. Chronological Split (No Data Leakage)</h5>
+                <p>Retail sales exhibit strong temporal dependencies. Rather than random k-fold cross-validation, models were trained strictly on observations prior to November 1, 2011, and tested on the subsequent unseen holiday period (Nov 1 – Dec 9, 2011).</p>
+              </div>
+              <div class="method-item">
+                <h5>2. Feature Engineering Pipeline</h5>
+                <p>Constructed strictly past-looking lag features (lag 1, 7, 14, 30 days), rolling averages (7, 14, 30 days), demand volatility (7-day standard deviation), momentum trend ratios, and calendar indicators (day of week, weekend, month).</p>
+              </div>
+              <div class="method-item">
+                <h5>3. Gradient Boosting Superiority</h5>
+                <p>Gradient Boosting outperformed Linear Regression and Random Forest with the lowest RMSE (71.81) and highest R² (0.325) because decision trees effectively capture non-linear step changes while sequential boosting corrects residual errors from high-demand surge events.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= SECTION 5: PRODUCT CATALOG ================= -->
+        <section id="section-products" class="page-section">
+          <div class="table-card">
+            <div class="table-header flex-between">
+              <div>
+                <h3 class="chart-title">Active Product Catalog</h3>
+                <p class="chart-subtitle">High-volume retail SKUs available for demand modeling</p>
+              </div>
+              <div class="search-box">
+                <input type="text" id="catalog-search-input" placeholder="Search product or SKU..." class="form-control">
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Stock Code</th>
+                    <th>Product Description</th>
+                    <th>Total Historical Demand</th>
+                    <th>Active Sales Days</th>
+                    <th>Avg Daily Demand</th>
+                    <th>Avg Unit Price</th>
+                    <th>Quick Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="catalog-table-tbody">
+                  <tr><td colspan="7" class="text-center">Loading product catalog...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= SECTION 6: EDA VISUALIZATION GALLERY ================= -->
+        <section id="section-eda" class="page-section">
+          <div class="eda-header-box mb-4">
+            <h3 class="chart-title">Exploratory Data Analysis Visualizations</h3>
+            <p class="chart-subtitle">Deep exploratory insights extracted from the cleaned UCI Online Retail dataset</p>
+          </div>
+
+          <div class="gallery-grid">
+            <div class="gallery-card">
+              <div class="gallery-img-box">
+                <img src="/graphs/top10_bestsellers.png" alt="Top 10 Best Sellers" loading="lazy">
+              </div>
+              <div class="gallery-body">
+                <h4>Top 10 Best-Selling Products</h4>
+                <p>Identifies highest volume retail products led by storage jars, popcorn holders, and t-light holders.</p>
+              </div>
+            </div>
+
+            <div class="gallery-card">
+              <div class="gallery-img-box">
+                <img src="/graphs/monthly_sales_trend.png" alt="Monthly Sales Trends" loading="lazy">
+              </div>
+              <div class="gallery-body">
+                <h4>Monthly Demand & Revenue Trajectories</h4>
+                <p>Shows steady growth culminating in a dramatic Q4 holiday sales surge across October and November.</p>
+              </div>
+            </div>
+
+            <div class="gallery-card">
+              <div class="gallery-img-box">
+                <img src="/graphs/daily_demand_trend.png" alt="Daily Demand Trend" loading="lazy">
+              </div>
+              <div class="gallery-body">
+                <h4>Daily Demand & 7-Day Moving Average</h4>
+                <p>Highlights high daily volatility smoothed by a 7-day rolling baseline capturing weekly demand cycles.</p>
+              </div>
+            </div>
+
+            <div class="gallery-card">
+              <div class="gallery-img-box">
+                <img src="/graphs/top_revenue_products.png" alt="Top Revenue Products" loading="lazy">
+              </div>
+              <div class="gallery-body">
+                <h4>Top Revenue-Generating SKUs</h4>
+                <p>Analyzes high-revenue items comparing units sold with gross revenue realization in GBP.</p>
+              </div>
+            </div>
+
+            <div class="gallery-card">
+              <div class="gallery-img-box">
+                <img src="/graphs/quantity_distribution.png" alt="Quantity Distribution" loading="lazy">
+              </div>
+              <div class="gallery-body">
+                <h4>Distribution of Transaction Quantities</h4>
+                <p>Right-skewed distribution revealing that most transactions consist of small-to-moderate batch orders.</p>
+              </div>
+            </div>
+
+            <div class="gallery-card">
+              <div class="gallery-img-box">
+                <img src="/graphs/demand_patterns_over_time.png" alt="Demand by Day of Week" loading="lazy">
+              </div>
+              <div class="gallery-body">
+                <h4>Demand Patterns by Day of Week</h4>
+                <p>Reveals peak retail activity occurring on Thursdays, Tuesdays, and Wednesdays, with Saturdays closed.</p>
+              </div>
+            </div>
+
+            <div class="gallery-card">
+              <div class="gallery-img-box">
+                <img src="/graphs/high_vs_low_demand.png" alt="High vs Low Demand" loading="lazy">
+              </div>
+              <div class="gallery-body">
+                <h4>Product Categorization into Quartiles</h4>
+                <p>Quartile segmentation of all 3,800+ SKUs into Low, Moderate, High, and Very High volume tiers.</p>
+              </div>
+            </div>
+
+            <div class="gallery-card">
+              <div class="gallery-img-box">
+                <img src="/graphs/product_wise_demand.png" alt="Product-Wise Demand" loading="lazy">
+              </div>
+              <div class="gallery-body">
+                <h4>SKU-Specific Demand Trajectories</h4>
+                <p>Individual 7-day moving averages demonstrating divergent seasonality and impulse purchasing spikes.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Notification Toast Container -->
+  <div id="toast" class="toast d-none">
+    <span id="toast-message"></span>
+  </div>
+
+  <script src="/static/script.js"></script>
+</body>
+</html>
