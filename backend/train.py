@@ -21,12 +21,14 @@ import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import StandardScaler, TargetEncoder
+from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-from sklearn.model_selection import TimeSeriesSplit, RandomizedSearchCV
+from sklearn.model_selection import RandomizedSearchCV
 
 from backend.preprocessing import clean_retail_data, generate_daily_demand_features
+from backend.temporal_validation import make_date_splits, get_date_split_ranges
+from backend.temporal_encoder import ChronologicalTargetEncoder
 
 NUMERICAL_FEATURES = [
     'day', 'month', 'year', 'dayofweek', 'is_weekend', 'weekofyear',
@@ -35,6 +37,7 @@ NUMERICAL_FEATURES = [
     'rolling_std_7', 'rolling_trend', 'cv_7', 'AvgUnitPrice'
 ]
 CATEGORICAL_FEATURES = ['StockCode']
+FEATURE_COLUMNS = ['StockCode', 'Date'] + NUMERICAL_FEATURES
 TARGET = 'DailyDemand'
 
 def build_preprocessor():
@@ -42,7 +45,7 @@ def build_preprocessor():
     return ColumnTransformer(
         transformers=[
             ('num', StandardScaler(), NUMERICAL_FEATURES),
-            ('cat', TargetEncoder(smooth='auto', cv=5), CATEGORICAL_FEATURES)
+            ('cat', ChronologicalTargetEncoder(date_col='Date', cat_col='StockCode', smooth=10.0, prior_mean=0.0), ['StockCode', 'Date'])
         ],
         remainder='drop'
     )
@@ -94,10 +97,10 @@ def train_and_evaluate_models(
     train_mask = featured_df['Date'] < split_date
     test_mask = featured_df['Date'] >= split_date
 
-    X_train = featured_df.loc[train_mask, CATEGORICAL_FEATURES + NUMERICAL_FEATURES]
+    X_train = featured_df.loc[train_mask, FEATURE_COLUMNS]
     y_train = featured_df.loc[train_mask, TARGET]
     
-    X_test = featured_df.loc[test_mask, CATEGORICAL_FEATURES + NUMERICAL_FEATURES]
+    X_test = featured_df.loc[test_mask, FEATURE_COLUMNS]
     y_test = featured_df.loc[test_mask, TARGET]
 
     dates_test = featured_df.loc[test_mask, 'Date']
@@ -159,9 +162,10 @@ def train_and_evaluate_models(
         saved_model_paths[name] = path
         print(f"[TRAIN] {name} Performance: MAE={metrics['MAE']}, RMSE={metrics['RMSE']}, R2={metrics['R2']}")
 
-    # 4. Phase 9: Hyperparameter Tuning on best performer
+    # 4. Phase 9: Hyperparameter Tuning on best performer using date-based chronological CV
     print("\n[TUNING] Performing Hyperparameter Tuning on Gradient Boosting...")
-    tscv = TimeSeriesSplit(n_splits=3)
+    train_dates_df = featured_df.loc[train_mask, ['Date']]
+    cv_splits = make_date_splits(train_dates_df, n_splits=3, date_col='Date')
     param_dist = {
         'regressor__n_estimators': [100, 150, 200],
         'regressor__max_depth': [4, 5, 7],
@@ -178,7 +182,7 @@ def train_and_evaluate_models(
         gb_pipeline,
         param_distributions=param_dist,
         n_iter=6,
-        cv=tscv,
+        cv=cv_splits,
         scoring='neg_mean_absolute_error',
         random_state=42,
         n_jobs=-1

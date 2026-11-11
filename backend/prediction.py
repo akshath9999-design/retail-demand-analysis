@@ -107,6 +107,7 @@ class DemandForecaster:
             # Build single-row feature dataframe
             feature_row = pd.DataFrame([{
                 'StockCode': stock_code,
+                'Date': next_date,
                 'day': next_date.day,
                 'month': next_date.month,
                 'year': next_date.year,
