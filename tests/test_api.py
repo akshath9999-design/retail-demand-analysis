@@ -16,12 +16,14 @@ Tests:
 
 import os
 import json
+import joblib
 import pytest
 import pandas as pd
 from fastapi.testclient import TestClient
 
 from backend.main import app
 from backend.prediction import forecaster
+from backend.features import FEATURE_COLUMNS, NUMERICAL_FEATURES
 from backend.stockout import analyze_stockout_risk
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -50,39 +52,51 @@ def test_preprocessing_no_cancellations_or_negatives():
 def test_feature_matrix_integrity():
     feat_path = os.path.join(MODELS_DIR, "featured_demand.csv.gz")
     assert os.path.exists(feat_path), "Engineered feature matrix file must exist."
-    df = pd.read_csv(feat_path, nrows=100)
-    required_features = ['day', 'month', 'dayofweek', 'lag_1', 'lag_7', 'lag_14', 'lag_30', 'rolling_mean_7', 'rolling_trend', 'DailyDemand']
+    df = pd.read_csv(feat_path, nrows=500)
+    required_features = FEATURE_COLUMNS + ['DailyDemand']
     for feat in required_features:
         assert feat in df.columns, f"Engineered feature {feat} missing."
-    # Ensure no NaN in lag/rolling columns
-    assert not df['lag_1'].isnull().any(), "Lag 1 feature contains unexpected NaNs."
-    assert not df['rolling_mean_7'].isnull().any(), "Rolling mean 7 contains unexpected NaNs."
+    for num_col in NUMERICAL_FEATURES:
+        assert not df[num_col].isnull().any(), f"Feature '{num_col}' contains unexpected NaNs."
+    dates = pd.to_datetime(df['Date'])
+    assert dates.is_monotonic_increasing, "Feature matrix must be globally sorted chronologically."
 
 # 4. Model Training & Serialization Tests
 def test_all_models_serialized():
     model_files = [
-        "linear_regression.pkl",
+        "ridge_model.pkl",
         "random_forest.pkl",
         "gradient_boosting.pkl",
+        "tuned_gradient_boosting.pkl",
         "best_model.pkl",
         "products_catalog.json",
-        "model_metadata.json"
+        "model_metadata.json",
     ]
     for mf in model_files:
         path = os.path.join(MODELS_DIR, mf)
         assert os.path.exists(path), f"Required model artifact {mf} does not exist."
         assert os.path.getsize(path) > 0, f"Model file {mf} is empty."
 
+    with open(os.path.join(MODELS_DIR, "model_metadata.json"), "r") as f:
+        meta = json.load(f)
+    best_model = joblib.load(os.path.join(MODELS_DIR, "best_model.pkl"))
+    reg = best_model.named_steps['regressor'] if hasattr(best_model, 'named_steps') else best_model
+    assert type(reg).__name__ == meta["model_type"], (
+        f"best_model.pkl type {type(reg).__name__} does not match model_metadata.json ({meta['model_type']})."
+    )
+
 # 5. Model Prediction Engine Tests
 def test_forecaster_multi_step_prediction():
-    res = forecaster.forecast("85123A", forecast_days=7)
-    assert res is not None
-    assert res["stock_code"] == "85123A"
-    assert res["forecast_days"] == 7
-    assert len(res["forecast_schedule"]) == 7
-    assert res["total_forecast_demand"] >= 0
-    assert res["avg_daily_demand"] >= 0
-    assert res["trend_direction"] in ["INCREASING", "DECREASING", "STABLE"]
+    forecaster.load_resources()
+    for horizon in [1, 7, 14, 30]:
+        res = forecaster.forecast("85123A", forecast_days=horizon)
+        assert res is not None
+        assert res["stock_code"] == "85123A"
+        assert res["forecast_days"] == horizon
+        assert len(res["forecast_schedule"]) == horizon
+        assert res["total_forecast_demand"] >= 0
+        assert res["avg_daily_demand"] >= 0
+        assert res["trend_direction"] in ["INCREASING", "DECREASING", "STABLE"]
 
 # 6. Model Evaluation Tests
 def test_model_metrics_validity():
@@ -91,12 +105,34 @@ def test_model_metrics_validity():
     with open(metrics_path, "r") as f:
         metrics = json.load(f)
     assert "metrics" in metrics
-    for model_name in ["Linear Regression", "Random Forest", "Gradient Boosting"]:
-        assert model_name in metrics["metrics"]
+    assert "cv_metrics" in metrics
+    assert "backtesting" in metrics
+    expected_entries = [
+        "Naive Baseline (t-1)",
+        "Seasonal Naive Baseline (t-7)",
+        "Ridge Regression",
+        "Random Forest",
+        "Gradient Boosting",
+        "Tuned Gradient Boosting",
+    ]
+    for model_name in expected_entries:
+        assert model_name in metrics["metrics"], f"Missing '{model_name}' in metrics JSON."
         m = metrics["metrics"][model_name]
         assert "MAE" in m and m["MAE"] > 0
         assert "RMSE" in m and m["RMSE"] > 0
         assert "R2" in m
+    assert metrics["best_model"] in [
+        "Ridge Regression",
+        "Random Forest",
+        "Gradient Boosting",
+        "Tuned Gradient Boosting",
+    ]
+    # Verify API /model-comparison matches file
+    res = client.get("/model-comparison")
+    assert res.status_code == 200
+    api_data = res.json()
+    assert api_data["best_model"] == metrics["best_model"]
+    assert "backtesting" in api_data
 
 # 7. Stockout Risk Logic Tests
 def test_stockout_risk_high_deficit():
@@ -178,6 +214,16 @@ def test_api_invalid_forecast_days_422():
 
 def test_api_invalid_inventory_422():
     payload = {"product_id": "85123A", "available_inventory": -10, "supplier_lead_time": 5}
+    res = client.post("/stockout-risk", json=payload)
+    assert res.status_code == 422
+
+def test_api_invalid_safety_buffer_422():
+    payload = {
+        "product_id": "85123A",
+        "available_inventory": 100,
+        "supplier_lead_time": 5,
+        "safety_buffer_pct": 1.5,
+    }
     res = client.post("/stockout-risk", json=payload)
     assert res.status_code == 422
 

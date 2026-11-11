@@ -50,6 +50,10 @@ if os.path.exists(GRAPHS_DIR):
 class PredictRequest(BaseModel):
     product_id: str = Field(..., description="Stock code of the product (e.g. '85123A')")
     forecast_days: int = Field(default=14, ge=1, le=90, description="Forecasting period in days (1 to 90)")
+    future_prices: Optional[List[float]] = Field(
+        default=None,
+        description="Optional future daily unit prices; defaults to carrying forward last historical price."
+    )
 
 class StockoutRequest(BaseModel):
     product_id: str = Field(..., description="Stock code of the product")
@@ -139,13 +143,19 @@ def root():
 @app.get("/status", summary="Check Application and ML Model Status")
 def get_status():
     """Returns runtime health and loaded model status."""
+    reg = (
+        forecaster.model.named_steps.get("regressor", forecaster.model)
+        if hasattr(forecaster.model, "named_steps")
+        else forecaster.model
+    )
     return {
         "status": "healthy",
         "model_loaded": forecaster.model is not None,
-        "model_type": str(type(forecaster.model).__name__),
+        "model_type": forecaster.metadata.get("model_type", str(type(reg).__name__)),
+        "pipeline_wrapped": hasattr(forecaster.model, "named_steps"),
         "products_catalog_size": len(forecaster.products_catalog),
         "historical_data_loaded": forecaster.featured_df is not None,
-        "best_model_name": forecaster.metadata.get("best_model", "Gradient Boosting")
+        "best_model_name": forecaster.metadata.get("best_model", "Unknown")
     }
 
 @app.get("/products", summary="List Available Products")
@@ -188,7 +198,11 @@ def predict_demand(req: PredictRequest):
     """
     stock_code = req.product_id.strip().upper()
     try:
-        result = forecaster.forecast(stock_code, forecast_days=req.forecast_days)
+        result = forecaster.forecast(
+            stock_code,
+            forecast_days=req.forecast_days,
+            future_prices=req.future_prices
+        )
         return {
             "success": True,
             "data": result
@@ -208,7 +222,7 @@ def predict_demand(req: PredictRequest):
 def calculate_stockout_risk(req: StockoutRequest):
     """
     Calculates stockout risk using the explicit rule:
-    Risk = HIGH if forecast demand during lead time >= available inventory.
+    Risk = HIGH if (available_inventory - expected_lead_time_demand) < safety_stock_buffer, else LOW.
     """
     stock_code = req.product_id.strip().upper()
     try:
@@ -247,18 +261,23 @@ def get_model_comparison():
             detail="Model evaluation metrics file not found."
         )
 
-    with open(metrics_file, "r") as f:
+    with open(metrics_file, "r", encoding="utf-8") as f:
         metrics_data = json.load(f)
 
-    # Explanation of algorithm behavior
-    explanation = {
-        "Linear Regression": "Serves as a baseline model with L2 regularization. While interpretable and fast, it struggles to capture non-linear seasonality and complex lag interactions, achieving R² ≈ 0.28.",
-        "Random Forest": "Non-linear bagging ensemble of decision trees. Captures non-linear demand thresholds and price elasticities well (R² ≈ 0.31), robust to variance but prone to tree ensemble memory overhead.",
-        "Gradient Boosting": "Best-performing model overall (R² ≈ 0.32, lowest RMSE = 71.81). Sequentially corrects previous residuals, excelling at capturing rolling momentum and holiday surge dynamics.",
-        "Tuned Gradient Boosting": "Fine-tuned via TimeSeriesSplit chronological cross-validation with optimized tree depth (4), learning rate (0.08), and sample splits to prevent overfitting."
-    }
+    # Provide non-hardcoded fallback explanations only if training metadata omitted them
+    if not metrics_data.get("model_explanations"):
+        best_name = metrics_data.get("best_model", "Selected Champion")
+        m_dict = metrics_data.get("metrics", {})
+        fallback_explanations = {}
+        for name, vals in m_dict.items():
+            rmse = vals.get("RMSE", "N/A")
+            r2 = vals.get("R2", "N/A")
+            tag = " (Selected Champion)" if name == best_name else ""
+            fallback_explanations[name] = (
+                f"Evaluated on untouched chronological test period: RMSE={rmse}, R²={r2}{tag}."
+            )
+        metrics_data["model_explanations"] = fallback_explanations
 
-    metrics_data["model_explanations"] = explanation
     return metrics_data
 
 @app.get("/sales-trends", summary="Historical Demand Trends for Charts")

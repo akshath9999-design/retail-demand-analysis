@@ -771,8 +771,37 @@ body {
 /* Model Performance Grid */
 .models-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
+}
+
+.model-type-tag.baseline {
+  background-color: rgba(148, 163, 184, 0.16);
+  color: #cbd5e1;
+}
+
+.method-explanations {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 16px;
+}
+
+.method-explanation-row {
+  background-color: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.method-explanation-row strong {
+  color: #ffffff;
+  display: block;
+  margin-bottom: 4px;
 }
 
 .model-stat-card {
@@ -987,6 +1016,9 @@ body {
     grid-template-columns: 1fr 1fr;
   }
   .method-grid {
+    grid-template-columns: 1fr;
+  }
+  .method-explanations {
     grid-template-columns: 1fr;
   }
 }

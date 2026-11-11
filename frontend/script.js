@@ -29,7 +29,7 @@ const sectionMeta = {
   },
   performance: {
     title: "Model Performance & Evaluation",
-    desc: "Chronological validation comparison of Linear Regression, Random Forest & Gradient Boosting"
+    desc: "Chronological CV, naive baselines, Ridge, Random Forest & Gradient Boosting backtesting"
   },
   products: {
     title: "Product Catalog",
@@ -102,6 +102,10 @@ async function checkHealth() {
     if (res.ok) {
       const data = await res.json();
       document.getElementById("api-status-text").innerText = `Engine: ${data.best_model_name} Online`;
+      const hdrModel = document.getElementById("header-best-model");
+      if (hdrModel && data.best_model_name) {
+        hdrModel.innerText = data.best_model_name;
+      }
     }
   } catch (e) {
     document.getElementById("api-status-text").innerText = "API Offline";
@@ -377,6 +381,15 @@ function setupCatalogSearch() {
 }
 
 // 4. Model Performance Comparison
+function _escapeHtml(val) {
+  return String(val ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 async function fetchModelMetrics() {
   try {
     const res = await fetch("/model-comparison");
@@ -385,35 +398,211 @@ async function fetchModelMetrics() {
     state.modelMetrics = data;
 
     const m = data.metrics || {};
-    // Populate cards
-    if (m["Linear Regression"]) {
-      document.getElementById("m-lr-mae").innerText = m["Linear Regression"].MAE;
-      document.getElementById("m-lr-rmse").innerText = m["Linear Regression"].RMSE;
-      document.getElementById("m-lr-r2").innerText = m["Linear Regression"].R2;
-    }
-    if (m["Random Forest"]) {
-      document.getElementById("m-rf-mae").innerText = m["Random Forest"].MAE;
-      document.getElementById("m-rf-rmse").innerText = m["Random Forest"].RMSE;
-      document.getElementById("m-rf-r2").innerText = m["Random Forest"].R2;
-    }
-    if (m["Gradient Boosting"]) {
-      document.getElementById("m-gb-mae").innerText = m["Gradient Boosting"].MAE;
-      document.getElementById("m-gb-rmse").innerText = m["Gradient Boosting"].RMSE;
-      document.getElementById("m-gb-r2").innerText = m["Gradient Boosting"].R2;
-    }
-    if (m["Tuned Gradient Boosting (Best)"]) {
-      document.getElementById("m-tuned-mae").innerText = m["Tuned Gradient Boosting (Best)"].MAE;
-      document.getElementById("m-tuned-rmse").innerText = m["Tuned Gradient Boosting (Best)"].RMSE;
-      document.getElementById("m-tuned-r2").innerText = m["Tuned Gradient Boosting (Best)"].R2;
+    const cvMetrics = data.cv_metrics || {};
+    const bestModel = data.best_model || "Unknown";
+
+    const hdrModel = document.getElementById("header-best-model");
+    if (hdrModel && bestModel) hdrModel.innerText = bestModel;
+
+    // 1. Dynamic Model Cards
+    const grid = document.getElementById("models-comparison-grid");
+    if (grid) {
+      const preferredOrder = [
+        "Naive Baseline (t-1)",
+        "Seasonal Naive Baseline (t-7)",
+        "Ridge Regression",
+        "Random Forest",
+        "Gradient Boosting",
+        "Tuned Gradient Boosting"
+      ];
+      const orderedKeys = [
+        ...preferredOrder.filter(k => Object.prototype.hasOwnProperty.call(m, k)),
+        ...Object.keys(m).filter(k => !preferredOrder.includes(k))
+      ];
+
+      grid.innerHTML = orderedKeys.map(name => {
+        const vals = m[name] || {};
+        const cv = cvMetrics[name];
+        const isWinner = name === bestModel;
+        const isBaseline = name.toLowerCase().includes("naive");
+        const tagClass = isWinner ? "winner" : (isBaseline ? "baseline" : "");
+        const tagText = isWinner ? "Champion" : (isBaseline ? "Baseline" : (cv ? "ML Candidate" : "Model"));
+
+        return `
+          <div class="model-stat-card ${isWinner ? "highlight" : ""}">
+            <div class="model-stat-header">
+              <h4>${_escapeHtml(name)}</h4>
+              <span class="model-type-tag ${tagClass}">${tagText}</span>
+            </div>
+            <div class="stat-metrics">
+              <div class="stat-row"><span>Test MAE:</span> <strong>${vals.MAE ?? "N/A"}</strong></div>
+              <div class="stat-row"><span>Test RMSE:</span> <strong>${vals.RMSE ?? "N/A"}</strong></div>
+              <div class="stat-row"><span>Test R²:</span> <strong>${vals.R2 ?? "N/A"}</strong></div>
+              ${cv ? `<div class="stat-row"><span>CV RMSE:</span> <strong>${cv.RMSE}</strong></div>` : ""}
+            </div>
+          </div>
+        `;
+      }).join("");
     }
 
-    renderModelComparisonCharts(m);
+    // 2. Encoding Comparison & CV Table
+    const cvSub = document.getElementById("cv-period-subtitle");
+    if (cvSub && data.validation_period) {
+      const folds = (data.validation_period.folds || []).length;
+      cvSub.innerText = `Date-grouped ${folds}-fold expanding CV (${data.validation_period.start} to ${data.validation_period.end}); Selected encoding: '${data.encoding_strategy || "N/A"}'`;
+    }
+
+    const cvTbody = document.getElementById("cv-encoding-tbody");
+    if (cvTbody) {
+      const encComp = data.encoding_comparison || {};
+      const rows = [];
+      Object.entries(encComp).forEach(([mode, resObj]) => {
+        const selectedTag = mode === data.encoding_strategy ? ' <span class="badge badge-primary">Selected</span>' : "";
+        if (resObj["Ridge Regression"]) {
+          const r = resObj["Ridge Regression"];
+          rows.push(`<tr>
+            <td>Encoding: <strong>${_escapeHtml(mode)}</strong> (Ridge)${selectedTag}</td>
+            <td><strong>${r.RMSE}</strong></td>
+            <td>${r.MAE}</td>
+            <td>${r.R2}</td>
+          </tr>`);
+        }
+        if (resObj["Gradient Boosting"]) {
+          const g = resObj["Gradient Boosting"];
+          rows.push(`<tr>
+            <td>Encoding: <strong>${_escapeHtml(mode)}</strong> (GradBoost)${selectedTag}</td>
+            <td><strong>${g.RMSE}</strong></td>
+            <td>${g.MAE}</td>
+            <td>${g.R2}</td>
+          </tr>`);
+        }
+      });
+
+      Object.entries(cvMetrics).forEach(([modelName, cv]) => {
+        const winBadge = modelName === bestModel ? ' <span class="badge badge-low">Champion</span>' : "";
+        rows.push(`<tr>
+          <td>Final CV: <strong>${_escapeHtml(modelName)}</strong>${winBadge}</td>
+          <td><strong>${cv.RMSE}</strong></td>
+          <td>${cv.MAE}</td>
+          <td>${cv.R2}</td>
+        </tr>`);
+      });
+
+      cvTbody.innerHTML = rows.length
+        ? rows.join("")
+        : `<tr><td colspan="4" class="text-center">No CV metadata available.</td></tr>`;
+    }
+
+    // 3. Rolling-Origin Backtest Horizons
+    const bt = data.backtesting || {};
+    const btSub = document.getElementById("backtest-origins-subtitle");
+    if (btSub && bt.origins) {
+      btSub.innerText = `Recursive multi-step origins: ${bt.origins.join(", ")} (no future actuals used as lags)`;
+    }
+
+    const btTbody = document.getElementById("backtest-horizon-tbody");
+    if (btTbody) {
+      const hMap = bt.horizon_metrics || {};
+      const rows = Object.entries(hMap).map(([hKey, hv]) => {
+        const beats = hv.beats_seasonal_naive_rmse;
+        const badge = beats
+          ? `<span class="badge badge-low">Beats S.Naive RMSE</span>`
+          : `<span class="badge badge-high">Trails S.Naive</span>`;
+        return `<tr>
+          <td><strong>Rolling ${_escapeHtml(hKey)}</strong> (${hv.samples} pts)</td>
+          <td>${hv.ml?.MAE} / <strong>${hv.ml?.RMSE}</strong></td>
+          <td>${hv.seasonal_naive?.MAE} / ${hv.seasonal_naive?.RMSE}</td>
+          <td>${badge}</td>
+        </tr>`;
+      });
+
+      const testRec = bt.test_origin_recursive || {};
+      const testHMap = testRec.horizon_metrics || {};
+      Object.entries(testHMap).forEach(([hKey, hv]) => {
+        const beats = hv.beats_seasonal_naive_rmse;
+        const badge = beats
+          ? `<span class="badge badge-low">Beats S.Naive RMSE</span>`
+          : `<span class="badge badge-high">Trails S.Naive</span>`;
+        rows.push(`<tr>
+          <td><strong>Test Origin (${_escapeHtml(testRec.origin_date || "")}) ${_escapeHtml(hKey)}</strong></td>
+          <td>${hv.ml?.MAE} / <strong>${hv.ml?.RMSE}</strong></td>
+          <td>${hv.seasonal_naive?.MAE} / ${hv.seasonal_naive?.RMSE}</td>
+          <td>${badge}</td>
+        </tr>`);
+      });
+
+      btTbody.innerHTML = rows.length
+        ? rows.join("")
+        : `<tr><td colspan="4" class="text-center">No rolling-origin backtesting results found.</td></tr>`;
+    }
+
+    // 4. Per-SKU Backtesting Summary
+    const skuSummary = bt.product_wise_summary || {};
+    const skuSubEl = document.getElementById("backtest-sku-summary");
+    if (skuSubEl && skuSummary.total_skus_evaluated !== undefined) {
+      skuSubEl.innerText = `${skuSummary.skus_beating_seasonal_naive_rmse}/${skuSummary.total_skus_evaluated} SKUs (${skuSummary.win_rate_pct}%) beat Seasonal Naive RMSE | Median SKU MAE: ${skuSummary.median_sku_mae}, Median SKU RMSE: ${skuSummary.median_sku_rmse}`;
+    }
+
+    const skuTbody = document.getElementById("backtest-sku-tbody");
+    if (skuTbody) {
+      const bestList = (skuSummary.best_skus || []).slice(0, 4).map(r => ({ ...r, tier: "Lowest Error" }));
+      const worstList = (skuSummary.highest_error_skus || []).slice(0, 4).map(r => ({ ...r, tier: "Highest Error" }));
+      const combined = [...bestList, ...worstList];
+
+      skuTbody.innerHTML = combined.length
+        ? combined.map(r => `<tr>
+            <td class="font-mono"><strong>${_escapeHtml(r.StockCode)}</strong></td>
+            <td>${_escapeHtml(r.tier)}</td>
+            <td>${r.samples}</td>
+            <td>${r.MAE}</td>
+            <td><strong>${r.RMSE}</strong></td>
+            <td>${r.SeasonalNaive_RMSE}</td>
+            <td>${r.beats_seasonal_naive ? '<span class="badge badge-low">Win vs S.Naive</span>' : '<span class="badge badge-high">Trail S.Naive</span>'}</td>
+          </tr>`).join("")
+        : `<tr><td colspan="7" class="text-center">No per-SKU breakdown available.</td></tr>`;
+    }
+
+    // 5. Plot Header & Dynamic Rationale
+    const plotTitle = document.getElementById("actual-vs-predicted-title");
+    if (plotTitle && data.test_period) {
+      plotTitle.innerText = `Holdout Evaluation: Unseen Test Demand (${data.test_period.start} to ${data.test_period.end})`;
+    }
+
+    const splitDesc = document.getElementById("method-split-desc");
+    if (splitDesc && data.train_period && data.test_period) {
+      splitDesc.innerText = `Training period (${data.train_period.start} to ${data.train_period.end}; ${data.train_samples} rows) strictly precedes untouched test holdout (${data.test_period.start} to ${data.test_period.end}; ${data.test_samples} rows). Hyperparameter tuning and category encoding use date-grouped expanding-window CV with all products on each date kept together.`;
+    }
+
+    const featDesc = document.getElementById("method-feature-desc");
+    if (featDesc && data.features) {
+      const nFeat = (data.features.numerical || []).length;
+      featDesc.innerText = `Uses ${nFeat} strictly causal (shift-1) numerical lag, ddof=1 volatility, trend, zero-sparsity, holiday, month-end, and historical price features combined with leakage-tested '${data.encoding_strategy || "N/A"}' StockCode encoding inside scikit-learn Pipelines.`;
+    }
+
+    const winnerDesc = document.getElementById("method-winner-desc");
+    if (winnerDesc) {
+      const bm = m[bestModel] || {};
+      const sn = m["Seasonal Naive Baseline (t-7)"] || {};
+      const rel = (bm.RMSE !== undefined && sn.RMSE !== undefined)
+        ? (bm.RMSE < sn.RMSE ? `outperforms Seasonal Naive RMSE (${sn.RMSE})` : `compared against Seasonal Naive RMSE (${sn.RMSE})`)
+        : "";
+      winnerDesc.innerText = `Selected '${bestModel}' (${data.model_type || ""}) via ${data.selection_criterion || "chronological CV"}. Achieved Test MAE=${bm.MAE ?? "N/A"}, Test RMSE=${bm.RMSE ?? "N/A"}, Test R²=${bm.R2 ?? "N/A"}, ${rel}.`;
+    }
+
+    const expList = document.getElementById("model-explanations-list");
+    if (expList && data.model_explanations) {
+      expList.innerHTML = Object.entries(data.model_explanations)
+        .map(([k, txt]) => `<div class="method-explanation-row"><strong>${_escapeHtml(k)}</strong>${_escapeHtml(txt)}</div>`)
+        .join("");
+    }
+
+    renderModelComparisonCharts(m, bestModel);
   } catch (err) {
     console.error("Model metrics error:", err);
   }
 }
 
-function renderModelComparisonCharts(metrics) {
+function renderModelComparisonCharts(metrics, bestModel) {
   const ctx = document.getElementById("modelComparisonChart");
   const ctxR2 = document.getElementById("r2ComparisonChart");
   if (!ctx || !ctxR2) return;
@@ -455,7 +644,15 @@ function renderModelComparisonCharts(metrics) {
     }
   });
 
-  // 2. R2 Goodness of Fit Chart
+  // 2. R2 Goodness of Fit Chart (dynamically scaled, highlights actual winner)
+  const r2Colors = labels.map(k => {
+    if (k === bestModel) return "#10b981";
+    if (k.toLowerCase().includes("naive")) return "#64748b";
+    return "#3b82f6";
+  });
+  const minR2 = Math.min(0, ...r2Data);
+  const maxR2 = Math.max(0.1, ...r2Data);
+
   if (state.charts.r2Comp) state.charts.r2Comp.destroy();
   state.charts.r2Comp = new Chart(ctxR2, {
     type: "bar",
@@ -464,9 +661,7 @@ function renderModelComparisonCharts(metrics) {
       datasets: [{
         label: "R² Coefficient of Determination",
         data: r2Data,
-        backgroundColor: [
-          "#94a3b8", "#60a5fa", "#10b981", "#34d399"
-        ],
+        backgroundColor: r2Colors,
         borderRadius: 4
       }]
     },
@@ -477,8 +672,8 @@ function renderModelComparisonCharts(metrics) {
       scales: {
         x: { ticks: { color: "#94a3b8" }, grid: { color: "#1e293b" } },
         y: {
-          min: 0,
-          max: 0.45,
+          suggestedMin: Math.floor(minR2 * 10) / 10,
+          suggestedMax: Math.ceil((maxR2 + 0.05) * 10) / 10,
           ticks: { color: "#94a3b8" },
           grid: { color: "#1e293b" },
           title: { display: true, text: "R² Score", color: "#94a3b8" }

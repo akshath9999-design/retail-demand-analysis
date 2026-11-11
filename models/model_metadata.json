@@ -1,40 +1,122 @@
 {
   "split_date": "2011-11-01",
-  "train_samples": 45750,
-  "test_samples": 5850,
-  "best_model": "Gradient Boosting",
-  "best_hyperparameters": {
-    "n_estimators": 100,
-    "min_samples_split": 8,
-    "max_depth": 4,
-    "learning_rate": 0.08
+  "train_period": {
+    "start": "2010-12-31",
+    "end": "2011-10-31"
   },
-  "metrics": {
-    "Linear Regression": {
-      "MAE": 41.2007,
-      "MSE": 5526.23,
-      "RMSE": 74.3386,
-      "R2": 0.2762
+  "validation_period": {
+    "start": "2011-03-18",
+    "end": "2011-10-31",
+    "folds": [
+      {
+        "fold": 1,
+        "train_start": "2010-12-31",
+        "train_end": "2011-03-17",
+        "train_unique_dates": 77,
+        "train_samples": 9890,
+        "val_start": "2011-03-18",
+        "val_end": "2011-06-01",
+        "val_unique_dates": 76,
+        "val_samples": 10298
+      },
+      {
+        "fold": 2,
+        "train_start": "2010-12-31",
+        "train_end": "2011-06-01",
+        "train_unique_dates": 153,
+        "train_samples": 20188,
+        "val_start": "2011-06-02",
+        "val_end": "2011-08-16",
+        "val_unique_dates": 76,
+        "val_samples": 11233
+      },
+      {
+        "fold": 3,
+        "train_start": "2010-12-31",
+        "train_end": "2011-08-16",
+        "train_unique_dates": 229,
+        "train_samples": 31421,
+        "val_start": "2011-08-17",
+        "val_end": "2011-10-31",
+        "val_unique_dates": 76,
+        "val_samples": 11400
+      }
+    ]
+  },
+  "test_period": {
+    "start": "2011-11-01",
+    "end": "2011-12-09"
+  },
+  "train_samples": 42821,
+  "test_samples": 5850,
+  "best_model": "Ridge Regression",
+  "model_type": "Ridge",
+  "selection_criterion": "Lowest pooled 3-fold chronological CV RMSE",
+  "validation_methodology": "Date-grouped expanding-window chronological CV (3 folds) + 4-origin recursive rolling backtest",
+  "encoding_strategy": "chronological_target",
+  "encoding_comparison": {
+    "none": {
+      "Ridge Regression": {
+        "MAE": 36.9498,
+        "MSE": 9747.8122,
+        "RMSE": 98.731,
+        "R2": 0.0705
+      },
+      "Gradient Boosting": {
+        "MAE": 39.8745,
+        "MSE": 10975.7537,
+        "RMSE": 104.7652,
+        "R2": -0.0466
+      }
     },
-    "Random Forest": {
-      "MAE": 37.1607,
-      "MSE": 5282.1061,
-      "RMSE": 72.6781,
-      "R2": 0.3082
+    "onehot": {
+      "Ridge Regression": {
+        "MAE": 37.6735,
+        "MSE": 9928.6675,
+        "RMSE": 99.6427,
+        "R2": 0.0532
+      },
+      "Gradient Boosting": {
+        "MAE": 41.4054,
+        "MSE": 11680.1807,
+        "RMSE": 108.0749,
+        "R2": -0.1138
+      }
     },
-    "Gradient Boosting": {
-      "MAE": 36.6066,
-      "MSE": 5156.8822,
-      "RMSE": 71.8114,
-      "R2": 0.3246
-    },
-    "Tuned Gradient Boosting (Best)": {
-      "MAE": 37.5562,
-      "MSE": 5413.8654,
-      "RMSE": 73.579,
-      "R2": 0.2909
+    "chronological_target": {
+      "Ridge Regression": {
+        "MAE": 36.9154,
+        "MSE": 9748.0205,
+        "RMSE": 98.7321,
+        "R2": 0.0705
+      },
+      "Gradient Boosting": {
+        "MAE": 39.4147,
+        "MSE": 10935.7063,
+        "RMSE": 104.5739,
+        "R2": -0.0428
+      }
     }
   },
+  "best_hyperparameters": {
+    "subsample": 0.85,
+    "n_estimators": 100,
+    "min_samples_split": 12,
+    "max_depth": 4,
+    "learning_rate": 0.06
+  },
+  "winning_model_params": {
+    "alpha": 1.0,
+    "copy_X": true,
+    "fit_intercept": true,
+    "max_iter": null,
+    "positive": false,
+    "random_state": null,
+    "solver": "auto",
+    "tol": 0.0001
+  },
+  "random_seed": 42,
+  "training_timestamp": "2026-11-11T06:02:42.194518+00:00",
   "features": {
     "numerical": [
       "day",
@@ -43,6 +125,8 @@
       "dayofweek",
       "is_weekend",
       "weekofyear",
+      "is_month_end",
+      "is_uk_holiday",
       "lag_1",
       "lag_7",
       "lag_14",
@@ -51,12 +135,2412 @@
       "rolling_mean_14",
       "rolling_mean_30",
       "rolling_std_7",
+      "rolling_std_14",
+      "rolling_std_30",
       "rolling_trend",
       "cv_7",
-      "AvgUnitPrice"
+      "hist_expanding_mean",
+      "zero_demand_ratio_14",
+      "days_since_last_sale",
+      "AvgUnitPrice",
+      "hist_avg_price"
     ],
     "categorical": [
       "StockCode"
+    ],
+    "all_input_columns": [
+      "StockCode",
+      "Date",
+      "day",
+      "month",
+      "year",
+      "dayofweek",
+      "is_weekend",
+      "weekofyear",
+      "is_month_end",
+      "is_uk_holiday",
+      "lag_1",
+      "lag_7",
+      "lag_14",
+      "lag_30",
+      "rolling_mean_7",
+      "rolling_mean_14",
+      "rolling_mean_30",
+      "rolling_std_7",
+      "rolling_std_14",
+      "rolling_std_30",
+      "rolling_trend",
+      "cv_7",
+      "hist_expanding_mean",
+      "zero_demand_ratio_14",
+      "days_since_last_sale",
+      "AvgUnitPrice",
+      "hist_avg_price"
     ]
+  },
+  "metrics": {
+    "Naive Baseline (t-1)": {
+      "MAE": 61.0627,
+      "MSE": 25977.1451,
+      "RMSE": 161.1743,
+      "R2": -0.5643
+    },
+    "Seasonal Naive Baseline (t-7)": {
+      "MAE": 53.8403,
+      "MSE": 27024.4783,
+      "RMSE": 164.3912,
+      "R2": -0.6273
+    },
+    "Ridge Regression": {
+      "MAE": 43.8456,
+      "MSE": 13399.7808,
+      "RMSE": 115.7574,
+      "R2": 0.1931
+    },
+    "Random Forest": {
+      "MAE": 47.4632,
+      "MSE": 14330.5112,
+      "RMSE": 119.7101,
+      "R2": 0.1371
+    },
+    "Gradient Boosting": {
+      "MAE": 47.0455,
+      "MSE": 14266.532,
+      "RMSE": 119.4426,
+      "R2": 0.1409
+    },
+    "Tuned Gradient Boosting": {
+      "MAE": 46.1229,
+      "MSE": 13374.0502,
+      "RMSE": 115.6462,
+      "R2": 0.1947
+    }
+  },
+  "train_metrics": {
+    "Ridge Regression": {
+      "MAE": 35.5242,
+      "MSE": 9540.064,
+      "RMSE": 97.6733,
+      "R2": 0.0731
+    },
+    "Random Forest": {
+      "MAE": 35.0031,
+      "MSE": 7159.1419,
+      "RMSE": 84.6117,
+      "R2": 0.3044
+    },
+    "Gradient Boosting": {
+      "MAE": 32.8828,
+      "MSE": 6379.9503,
+      "RMSE": 79.8746,
+      "R2": 0.3801
+    },
+    "Tuned Gradient Boosting": {
+      "MAE": 34.4258,
+      "MSE": 7987.83,
+      "RMSE": 89.3747,
+      "R2": 0.2239
+    }
+  },
+  "cv_metrics": {
+    "Ridge Regression": {
+      "MAE": 36.9154,
+      "MSE": 9748.0205,
+      "RMSE": 98.7321,
+      "R2": 0.0705,
+      "fold_metrics": [
+        {
+          "MAE": 34.7941,
+          "MSE": 11107.8942,
+          "RMSE": 105.394,
+          "R2": 0.0777,
+          "fold": 1,
+          "val_samples": 10298
+        },
+        {
+          "MAE": 38.1783,
+          "MSE": 6978.338,
+          "RMSE": 83.5364,
+          "R2": 0.0609,
+          "fold": 2,
+          "val_samples": 11233
+        },
+        {
+          "MAE": 37.5873,
+          "MSE": 11248.7104,
+          "RMSE": 106.0599,
+          "R2": 0.0685,
+          "fold": 3,
+          "val_samples": 11400
+        }
+      ]
+    },
+    "Random Forest": {
+      "MAE": 43.8805,
+      "MSE": 11098.9868,
+      "RMSE": 105.3517,
+      "R2": -0.0584,
+      "fold_metrics": [
+        {
+          "MAE": 46.0189,
+          "MSE": 12422.5459,
+          "RMSE": 111.4565,
+          "R2": -0.0315,
+          "fold": 1,
+          "val_samples": 10298
+        },
+        {
+          "MAE": 42.8647,
+          "MSE": 8466.9147,
+          "RMSE": 92.0158,
+          "R2": -0.1394,
+          "fold": 2,
+          "val_samples": 11233
+        },
+        {
+          "MAE": 42.9497,
+          "MSE": 12496.8864,
+          "RMSE": 111.7895,
+          "R2": -0.0348,
+          "fold": 3,
+          "val_samples": 11400
+        }
+      ]
+    },
+    "Gradient Boosting": {
+      "MAE": 43.3117,
+      "MSE": 12016.3057,
+      "RMSE": 109.6189,
+      "R2": -0.1458,
+      "fold_metrics": [
+        {
+          "MAE": 50.7404,
+          "MSE": 15011.3552,
+          "RMSE": 122.5208,
+          "R2": -0.2464,
+          "fold": 1,
+          "val_samples": 10298
+        },
+        {
+          "MAE": 41.0017,
+          "MSE": 8969.5525,
+          "RMSE": 94.7077,
+          "R2": -0.2071,
+          "fold": 2,
+          "val_samples": 11233
+        },
+        {
+          "MAE": 38.8773,
+          "MSE": 12312.8987,
+          "RMSE": 110.9635,
+          "R2": -0.0196,
+          "fold": 3,
+          "val_samples": 11400
+        }
+      ]
+    },
+    "Tuned Gradient Boosting": {
+      "MAE": 38.423,
+      "MSE": 10454.5531,
+      "RMSE": 102.2475,
+      "R2": 0.0031,
+      "fold_metrics": [
+        {
+          "MAE": 42.2009,
+          "MSE": 12427.3605,
+          "RMSE": 111.4781,
+          "R2": -0.0319,
+          "fold": 1,
+          "val_samples": 10298
+        },
+        {
+          "MAE": 37.8352,
+          "MSE": 7577.1516,
+          "RMSE": 87.0468,
+          "R2": -0.0197,
+          "fold": 2,
+          "val_samples": 11233
+        },
+        {
+          "MAE": 35.5895,
+          "MSE": 11507.7004,
+          "RMSE": 107.274,
+          "R2": 0.0471,
+          "fold": 3,
+          "val_samples": 11400
+        }
+      ]
+    }
+  },
+  "backtesting": {
+    "origins": [
+      "2011-04-30",
+      "2011-06-20",
+      "2011-08-10",
+      "2011-10-01"
+    ],
+    "origin_details": [
+      {
+        "origin_date": "2011-04-30",
+        "train_samples": 15758,
+        "skus_evaluated": 133,
+        "ml_14d_mae": 35.3622,
+        "ml_14d_rmse": 85.3597,
+        "snaive_14d_mae": 38.0575,
+        "snaive_14d_rmse": 104.6213
+      },
+      {
+        "origin_date": "2011-06-20",
+        "train_samples": 22952,
+        "skus_evaluated": 140,
+        "ml_14d_mae": 34.8399,
+        "ml_14d_rmse": 58.6665,
+        "snaive_14d_mae": 41.9592,
+        "snaive_14d_rmse": 95.0651
+      },
+      {
+        "origin_date": "2011-08-10",
+        "train_samples": 30521,
+        "skus_evaluated": 149,
+        "ml_14d_mae": 41.6406,
+        "ml_14d_rmse": 98.8016,
+        "snaive_14d_mae": 50.4382,
+        "snaive_14d_rmse": 155.4784
+      },
+      {
+        "origin_date": "2011-10-01",
+        "train_samples": 38321,
+        "skus_evaluated": 150,
+        "ml_14d_mae": 41.6991,
+        "ml_14d_rmse": 116.4909,
+        "snaive_14d_mae": 44.8433,
+        "snaive_14d_rmse": 127.5935
+      }
+    ],
+    "horizon_metrics": {
+      "7d": {
+        "horizon_days": 7,
+        "samples": 4004,
+        "ml": {
+          "MAE": 38.3444,
+          "MSE": 10070.3602,
+          "RMSE": 100.3512,
+          "R2": 0.0763
+        },
+        "seasonal_naive": {
+          "MAE": 43.2138,
+          "MSE": 15502.1409,
+          "RMSE": 124.5076,
+          "R2": -0.4219
+        },
+        "beats_seasonal_naive_rmse": true,
+        "beats_seasonal_naive_mae": true
+      },
+      "14d": {
+        "horizon_days": 14,
+        "samples": 8008,
+        "ml": {
+          "MAE": 38.5316,
+          "MSE": 8638.008,
+          "RMSE": 92.9409,
+          "R2": 0.0834
+        },
+        "seasonal_naive": {
+          "MAE": 44.017,
+          "MSE": 15323.2003,
+          "RMSE": 123.7869,
+          "R2": -0.626
+        },
+        "beats_seasonal_naive_rmse": true,
+        "beats_seasonal_naive_mae": true
+      },
+      "30d": {
+        "horizon_days": 30,
+        "samples": 17160,
+        "ml": {
+          "MAE": 39.9847,
+          "MSE": 10667.6266,
+          "RMSE": 103.2842,
+          "R2": 0.0622
+        },
+        "seasonal_naive": {
+          "MAE": 45.4491,
+          "MSE": 18794.3868,
+          "RMSE": 137.0926,
+          "R2": -0.6523
+        },
+        "beats_seasonal_naive_rmse": true,
+        "beats_seasonal_naive_mae": true
+      }
+    },
+    "product_wise_summary": {
+      "total_skus_evaluated": 150,
+      "skus_beating_seasonal_naive_rmse": 142,
+      "win_rate_pct": 94.7,
+      "median_sku_mae": 33.0678,
+      "median_sku_rmse": 54.4826,
+      "best_skus": [
+        {
+          "StockCode": "22666",
+          "samples": 120,
+          "actual_mean": 15.35,
+          "pred_mean": 22.86,
+          "MAE": 17.0315,
+          "RMSE": 22.8539,
+          "R2": -0.1534,
+          "SeasonalNaive_MAE": 26.4667,
+          "SeasonalNaive_RMSE": 52.3829,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22457",
+          "samples": 120,
+          "actual_mean": 20.77,
+          "pred_mean": 26.01,
+          "MAE": 16.2902,
+          "RMSE": 23.1896,
+          "R2": 0.094,
+          "SeasonalNaive_MAE": 17.0417,
+          "SeasonalNaive_RMSE": 24.5915,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22720",
+          "samples": 120,
+          "actual_mean": 14.08,
+          "pred_mean": 21.7,
+          "MAE": 15.8407,
+          "RMSE": 23.7749,
+          "R2": 0.0271,
+          "SeasonalNaive_MAE": 21.2083,
+          "SeasonalNaive_RMSE": 43.4597,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22907",
+          "samples": 120,
+          "actual_mean": 15.63,
+          "pred_mean": 26.8,
+          "MAE": 18.4045,
+          "RMSE": 24.3346,
+          "R2": -0.3216,
+          "SeasonalNaive_MAE": 17.0417,
+          "SeasonalNaive_RMSE": 27.2172,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "84692",
+          "samples": 120,
+          "actual_mean": 19.27,
+          "pred_mean": 28.32,
+          "MAE": 18.8793,
+          "RMSE": 25.4905,
+          "R2": 0.0188,
+          "SeasonalNaive_MAE": 33.4833,
+          "SeasonalNaive_RMSE": 76.5722,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "21108",
+          "samples": 120,
+          "actual_mean": 6.79,
+          "pred_mean": 24.08,
+          "MAE": 21.3112,
+          "RMSE": 27.9071,
+          "R2": -1.6868,
+          "SeasonalNaive_MAE": 6.7667,
+          "SeasonalNaive_RMSE": 16.8864,
+          "beats_seasonal_naive": false
+        },
+        {
+          "StockCode": "22697",
+          "samples": 120,
+          "actual_mean": 21.33,
+          "pred_mean": 22.34,
+          "MAE": 17.5383,
+          "RMSE": 28.1708,
+          "R2": 0.1048,
+          "SeasonalNaive_MAE": 19.45,
+          "SeasonalNaive_RMSE": 32.1901,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22382",
+          "samples": 120,
+          "actual_mean": 29.09,
+          "pred_mean": 33.58,
+          "MAE": 20.9863,
+          "RMSE": 28.9434,
+          "R2": 0.2119,
+          "SeasonalNaive_MAE": 30.0083,
+          "SeasonalNaive_RMSE": 47.1527,
+          "beats_seasonal_naive": true
+        }
+      ],
+      "highest_error_skus": [
+        {
+          "StockCode": "84077",
+          "samples": 120,
+          "actual_mean": 148.3,
+          "pred_mean": 186.82,
+          "MAE": 168.4837,
+          "RMSE": 453.6496,
+          "R2": -0.0067,
+          "SeasonalNaive_MAE": 188.475,
+          "SeasonalNaive_RMSE": 516.7839,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22197",
+          "samples": 120,
+          "actual_mean": 150.22,
+          "pred_mean": 110.71,
+          "MAE": 141.0244,
+          "RMSE": 440.7483,
+          "R2": 0.0095,
+          "SeasonalNaive_MAE": 239.3833,
+          "SeasonalNaive_RMSE": 598.979,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "23084",
+          "samples": 60,
+          "actual_mean": 137.83,
+          "pred_mean": 30.67,
+          "MAE": 152.3851,
+          "RMSE": 432.3807,
+          "R2": -0.0457,
+          "SeasonalNaive_MAE": 139.05,
+          "SeasonalNaive_RMSE": 442.8653,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "20971",
+          "samples": 120,
+          "actual_mean": 54.01,
+          "pred_mean": 22.47,
+          "MAE": 59.1767,
+          "RMSE": 290.6646,
+          "R2": -0.0022,
+          "SeasonalNaive_MAE": 59.6083,
+          "SeasonalNaive_RMSE": 294.1167,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "16014",
+          "samples": 120,
+          "actual_mean": 49.63,
+          "pred_mean": 32.71,
+          "MAE": 75.1456,
+          "RMSE": 275.7502,
+          "R2": -0.0031,
+          "SeasonalNaive_MAE": 50.075,
+          "SeasonalNaive_RMSE": 279.7573,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "21977",
+          "samples": 120,
+          "actual_mean": 78.9,
+          "pred_mean": 80.46,
+          "MAE": 102.8191,
+          "RMSE": 274.3674,
+          "R2": 0.0163,
+          "SeasonalNaive_MAE": 85.4833,
+          "SeasonalNaive_RMSE": 284.0028,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "15036",
+          "samples": 120,
+          "actual_mean": 79.08,
+          "pred_mean": 83.57,
+          "MAE": 102.1405,
+          "RMSE": 217.6727,
+          "R2": 0.0038,
+          "SeasonalNaive_MAE": 138.0167,
+          "SeasonalNaive_RMSE": 317.9336,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "17003",
+          "samples": 120,
+          "actual_mean": 71.93,
+          "pred_mean": 69.4,
+          "MAE": 95.0571,
+          "RMSE": 195.8542,
+          "R2": 0.0312,
+          "SeasonalNaive_MAE": 118.3667,
+          "SeasonalNaive_RMSE": 268.4592,
+          "beats_seasonal_naive": true
+        }
+      ],
+      "all_skus": [
+        {
+          "StockCode": "22666",
+          "samples": 120,
+          "actual_mean": 15.35,
+          "pred_mean": 22.86,
+          "MAE": 17.0315,
+          "RMSE": 22.8539,
+          "R2": -0.1534,
+          "SeasonalNaive_MAE": 26.4667,
+          "SeasonalNaive_RMSE": 52.3829,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22457",
+          "samples": 120,
+          "actual_mean": 20.77,
+          "pred_mean": 26.01,
+          "MAE": 16.2902,
+          "RMSE": 23.1896,
+          "R2": 0.094,
+          "SeasonalNaive_MAE": 17.0417,
+          "SeasonalNaive_RMSE": 24.5915,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22720",
+          "samples": 120,
+          "actual_mean": 14.08,
+          "pred_mean": 21.7,
+          "MAE": 15.8407,
+          "RMSE": 23.7749,
+          "R2": 0.0271,
+          "SeasonalNaive_MAE": 21.2083,
+          "SeasonalNaive_RMSE": 43.4597,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22907",
+          "samples": 120,
+          "actual_mean": 15.63,
+          "pred_mean": 26.8,
+          "MAE": 18.4045,
+          "RMSE": 24.3346,
+          "R2": -0.3216,
+          "SeasonalNaive_MAE": 17.0417,
+          "SeasonalNaive_RMSE": 27.2172,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "84692",
+          "samples": 120,
+          "actual_mean": 19.27,
+          "pred_mean": 28.32,
+          "MAE": 18.8793,
+          "RMSE": 25.4905,
+          "R2": 0.0188,
+          "SeasonalNaive_MAE": 33.4833,
+          "SeasonalNaive_RMSE": 76.5722,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "21108",
+          "samples": 120,
+          "actual_mean": 6.79,
+          "pred_mean": 24.08,
+          "MAE": 21.3112,
+          "RMSE": 27.9071,
+          "R2": -1.6868,
+          "SeasonalNaive_MAE": 6.7667,
+          "SeasonalNaive_RMSE": 16.8864,
+          "beats_seasonal_naive": false
+        },
+        {
+          "StockCode": "22697",
+          "samples": 120,
+          "actual_mean": 21.33,
+          "pred_mean": 22.34,
+          "MAE": 17.5383,
+          "RMSE": 28.1708,
+          "R2": 0.1048,
+          "SeasonalNaive_MAE": 19.45,
+          "SeasonalNaive_RMSE": 32.1901,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22382",
+          "samples": 120,
+          "actual_mean": 29.09,
+          "pred_mean": 33.58,
+          "MAE": 20.9863,
+          "RMSE": 28.9434,
+          "R2": 0.2119,
+          "SeasonalNaive_MAE": 30.0083,
+          "SeasonalNaive_RMSE": 47.1527,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "16161P",
+          "samples": 120,
+          "actual_mean": 20.0,
+          "pred_mean": 28.79,
+          "MAE": 22.0088,
+          "RMSE": 29.2472,
+          "R2": -0.0316,
+          "SeasonalNaive_MAE": 41.25,
+          "SeasonalNaive_RMSE": 90.4848,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22960",
+          "samples": 120,
+          "actual_mean": 17.96,
+          "pred_mean": 25.02,
+          "MAE": 19.2011,
+          "RMSE": 29.8649,
+          "R2": -0.0483,
+          "SeasonalNaive_MAE": 16.4083,
+          "SeasonalNaive_RMSE": 31.0978,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22077",
+          "samples": 120,
+          "actual_mean": 23.92,
+          "pred_mean": 27.52,
+          "MAE": 20.7636,
+          "RMSE": 30.1036,
+          "R2": 0.1127,
+          "SeasonalNaive_MAE": 25.0167,
+          "SeasonalNaive_RMSE": 45.8483,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22554",
+          "samples": 120,
+          "actual_mean": 20.14,
+          "pred_mean": 25.78,
+          "MAE": 19.69,
+          "RMSE": 30.1435,
+          "R2": 0.0388,
+          "SeasonalNaive_MAE": 22.6333,
+          "SeasonalNaive_RMSE": 38.972,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22551",
+          "samples": 120,
+          "actual_mean": 18.62,
+          "pred_mean": 25.73,
+          "MAE": 20.8082,
+          "RMSE": 30.1883,
+          "R2": 0.0103,
+          "SeasonalNaive_MAE": 21.7917,
+          "SeasonalNaive_RMSE": 38.3572,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "20723",
+          "samples": 120,
+          "actual_mean": 27.42,
+          "pred_mean": 32.73,
+          "MAE": 23.0596,
+          "RMSE": 31.8701,
+          "R2": 0.189,
+          "SeasonalNaive_MAE": 31.0583,
+          "SeasonalNaive_RMSE": 48.6843,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22328",
+          "samples": 120,
+          "actual_mean": 14.5,
+          "pred_mean": 25.0,
+          "MAE": 19.9713,
+          "RMSE": 32.9334,
+          "R2": -0.0816,
+          "SeasonalNaive_MAE": 22.6833,
+          "SeasonalNaive_RMSE": 42.6825,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "23231",
+          "samples": 120,
+          "actual_mean": 20.82,
+          "pred_mean": 33.4,
+          "MAE": 24.7497,
+          "RMSE": 33.0473,
+          "R2": -0.1607,
+          "SeasonalNaive_MAE": 33.7417,
+          "SeasonalNaive_RMSE": 49.3669,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "79321",
+          "samples": 120,
+          "actual_mean": 16.78,
+          "pred_mean": 19.08,
+          "MAE": 19.059,
+          "RMSE": 33.4747,
+          "R2": 0.0432,
+          "SeasonalNaive_MAE": 20.8,
+          "SeasonalNaive_RMSE": 39.7838,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22423",
+          "samples": 120,
+          "actual_mean": 29.96,
+          "pred_mean": 29.17,
+          "MAE": 19.5779,
+          "RMSE": 33.9203,
+          "R2": 0.1931,
+          "SeasonalNaive_MAE": 28.6417,
+          "SeasonalNaive_RMSE": 53.7563,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22558",
+          "samples": 120,
+          "actual_mean": 19.72,
+          "pred_mean": 31.15,
+          "MAE": 25.2626,
+          "RMSE": 35.0535,
+          "R2": -0.0915,
+          "SeasonalNaive_MAE": 28.5167,
+          "SeasonalNaive_RMSE": 44.8059,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22356",
+          "samples": 120,
+          "actual_mean": 24.64,
+          "pred_mean": 31.47,
+          "MAE": 23.4299,
+          "RMSE": 35.2498,
+          "R2": 0.0915,
+          "SeasonalNaive_MAE": 31.9,
+          "SeasonalNaive_RMSE": 47.9319,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "20727",
+          "samples": 120,
+          "actual_mean": 38.95,
+          "pred_mean": 38.51,
+          "MAE": 24.8959,
+          "RMSE": 35.3384,
+          "R2": 0.1915,
+          "SeasonalNaive_MAE": 40.225,
+          "SeasonalNaive_RMSE": 63.9814,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "21733",
+          "samples": 120,
+          "actual_mean": 13.92,
+          "pred_mean": 23.34,
+          "MAE": 22.0562,
+          "RMSE": 35.4648,
+          "R2": -0.1051,
+          "SeasonalNaive_MAE": 14.3417,
+          "SeasonalNaive_RMSE": 33.9019,
+          "beats_seasonal_naive": false
+        },
+        {
+          "StockCode": "84970S",
+          "samples": 120,
+          "actual_mean": 23.45,
+          "pred_mean": 33.39,
+          "MAE": 26.1602,
+          "RMSE": 35.6363,
+          "R2": 0.0471,
+          "SeasonalNaive_MAE": 30.5167,
+          "SeasonalNaive_RMSE": 52.5041,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22741",
+          "samples": 120,
+          "actual_mean": 22.86,
+          "pred_mean": 31.06,
+          "MAE": 29.6301,
+          "RMSE": 36.3194,
+          "R2": -0.0724,
+          "SeasonalNaive_MAE": 31.3917,
+          "SeasonalNaive_RMSE": 48.1829,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "21086",
+          "samples": 120,
+          "actual_mean": 18.24,
+          "pred_mean": 27.6,
+          "MAE": 22.3544,
+          "RMSE": 36.4441,
+          "R2": 0.0042,
+          "SeasonalNaive_MAE": 28.9333,
+          "SeasonalNaive_RMSE": 55.0088,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22662",
+          "samples": 120,
+          "actual_mean": 20.82,
+          "pred_mean": 25.07,
+          "MAE": 22.5188,
+          "RMSE": 36.8405,
+          "R2": 0.0353,
+          "SeasonalNaive_MAE": 22.55,
+          "SeasonalNaive_RMSE": 42.2621,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22090",
+          "samples": 120,
+          "actual_mean": 26.82,
+          "pred_mean": 26.78,
+          "MAE": 24.1793,
+          "RMSE": 37.2822,
+          "R2": 0.1315,
+          "SeasonalNaive_MAE": 23.175,
+          "SeasonalNaive_RMSE": 41.2087,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "21094",
+          "samples": 120,
+          "actual_mean": 26.35,
+          "pred_mean": 31.44,
+          "MAE": 26.0982,
+          "RMSE": 37.3801,
+          "R2": 0.1052,
+          "SeasonalNaive_MAE": 33.6917,
+          "SeasonalNaive_RMSE": 55.5023,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "21175",
+          "samples": 120,
+          "actual_mean": 23.11,
+          "pred_mean": 33.06,
+          "MAE": 25.313,
+          "RMSE": 37.4276,
+          "R2": 0.0235,
+          "SeasonalNaive_MAE": 22.6583,
+          "SeasonalNaive_RMSE": 38.809,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "20712",
+          "samples": 120,
+          "actual_mean": 27.15,
+          "pred_mean": 28.23,
+          "MAE": 23.7683,
+          "RMSE": 37.4852,
+          "R2": 0.1626,
+          "SeasonalNaive_MAE": 34.4083,
+          "SeasonalNaive_RMSE": 67.6813,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22467",
+          "samples": 120,
+          "actual_mean": 16.94,
+          "pred_mean": 26.43,
+          "MAE": 22.1975,
+          "RMSE": 37.8159,
+          "R2": -0.0089,
+          "SeasonalNaive_MAE": 24.15,
+          "SeasonalNaive_RMSE": 47.51,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22740",
+          "samples": 120,
+          "actual_mean": 12.19,
+          "pred_mean": 32.4,
+          "MAE": 31.0189,
+          "RMSE": 37.8995,
+          "R2": -0.5228,
+          "SeasonalNaive_MAE": 29.7833,
+          "SeasonalNaive_RMSE": 68.7688,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "21928",
+          "samples": 120,
+          "actual_mean": 25.9,
+          "pred_mean": 32.58,
+          "MAE": 28.3074,
+          "RMSE": 38.356,
+          "R2": 0.043,
+          "SeasonalNaive_MAE": 38.125,
+          "SeasonalNaive_RMSE": 64.1512,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "21232",
+          "samples": 120,
+          "actual_mean": 26.82,
+          "pred_mean": 35.94,
+          "MAE": 26.6122,
+          "RMSE": 38.4561,
+          "R2": 0.0873,
+          "SeasonalNaive_MAE": 25.9,
+          "SeasonalNaive_RMSE": 47.0255,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "21080",
+          "samples": 120,
+          "actual_mean": 30.98,
+          "pred_mean": 48.86,
+          "MAE": 33.134,
+          "RMSE": 39.2261,
+          "R2": -0.0803,
+          "SeasonalNaive_MAE": 36.825,
+          "SeasonalNaive_RMSE": 58.8444,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "23170",
+          "samples": 60,
+          "actual_mean": 23.83,
+          "pred_mean": 40.25,
+          "MAE": 30.6461,
+          "RMSE": 39.5009,
+          "R2": -0.1388,
+          "SeasonalNaive_MAE": 24.5,
+          "SeasonalNaive_RMSE": 39.9729,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22966",
+          "samples": 120,
+          "actual_mean": 16.81,
+          "pred_mean": 24.99,
+          "MAE": 22.314,
+          "RMSE": 39.611,
+          "R2": -0.0071,
+          "SeasonalNaive_MAE": 16.1083,
+          "SeasonalNaive_RMSE": 40.1961,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22029",
+          "samples": 120,
+          "actual_mean": 21.88,
+          "pred_mean": 29.34,
+          "MAE": 24.8513,
+          "RMSE": 40.0017,
+          "R2": -0.0043,
+          "SeasonalNaive_MAE": 24.85,
+          "SeasonalNaive_RMSE": 46.2131,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "20726",
+          "samples": 120,
+          "actual_mean": 32.12,
+          "pred_mean": 31.71,
+          "MAE": 22.3319,
+          "RMSE": 40.06,
+          "R2": 0.1565,
+          "SeasonalNaive_MAE": 28.1083,
+          "SeasonalNaive_RMSE": 44.1451,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22326",
+          "samples": 120,
+          "actual_mean": 22.92,
+          "pred_mean": 24.78,
+          "MAE": 21.526,
+          "RMSE": 40.0994,
+          "R2": 0.0905,
+          "SeasonalNaive_MAE": 37.05,
+          "SeasonalNaive_RMSE": 70.9839,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "82482",
+          "samples": 120,
+          "actual_mean": 27.34,
+          "pred_mean": 26.16,
+          "MAE": 22.2755,
+          "RMSE": 40.294,
+          "R2": 0.1048,
+          "SeasonalNaive_MAE": 26.675,
+          "SeasonalNaive_RMSE": 44.9534,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "21829",
+          "samples": 120,
+          "actual_mean": 19.44,
+          "pred_mean": 29.6,
+          "MAE": 27.7377,
+          "RMSE": 41.1523,
+          "R2": -0.0426,
+          "SeasonalNaive_MAE": 28.1333,
+          "SeasonalNaive_RMSE": 48.6273,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "21929",
+          "samples": 120,
+          "actual_mean": 24.82,
+          "pred_mean": 34.8,
+          "MAE": 28.692,
+          "RMSE": 41.4524,
+          "R2": 0.0522,
+          "SeasonalNaive_MAE": 31.7,
+          "SeasonalNaive_RMSE": 53.4846,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22417",
+          "samples": 120,
+          "actual_mean": 21.23,
+          "pred_mean": 31.82,
+          "MAE": 26.2976,
+          "RMSE": 41.4542,
+          "R2": -0.0716,
+          "SeasonalNaive_MAE": 30.55,
+          "SeasonalNaive_RMSE": 56.1897,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "23200",
+          "samples": 60,
+          "actual_mean": 24.73,
+          "pred_mean": 45.4,
+          "MAE": 34.3533,
+          "RMSE": 41.631,
+          "R2": -0.196,
+          "SeasonalNaive_MAE": 56.4667,
+          "SeasonalNaive_RMSE": 96.9893,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22951",
+          "samples": 120,
+          "actual_mean": 19.37,
+          "pred_mean": 26.95,
+          "MAE": 24.4902,
+          "RMSE": 41.7207,
+          "R2": -0.0114,
+          "SeasonalNaive_MAE": 23.9167,
+          "SeasonalNaive_RMSE": 50.0866,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22961",
+          "samples": 120,
+          "actual_mean": 34.09,
+          "pred_mean": 45.41,
+          "MAE": 33.1714,
+          "RMSE": 42.2676,
+          "R2": 0.0803,
+          "SeasonalNaive_MAE": 50.1917,
+          "SeasonalNaive_RMSE": 107.1605,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "21137",
+          "samples": 120,
+          "actual_mean": 18.97,
+          "pred_mean": 26.87,
+          "MAE": 27.7023,
+          "RMSE": 42.5762,
+          "R2": -0.0246,
+          "SeasonalNaive_MAE": 38.025,
+          "SeasonalNaive_RMSE": 78.273,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "20972",
+          "samples": 120,
+          "actual_mean": 20.48,
+          "pred_mean": 24.75,
+          "MAE": 21.7701,
+          "RMSE": 42.9716,
+          "R2": 0.0578,
+          "SeasonalNaive_MAE": 30.9833,
+          "SeasonalNaive_RMSE": 64.3419,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "84978",
+          "samples": 120,
+          "actual_mean": 33.62,
+          "pred_mean": 46.64,
+          "MAE": 31.9515,
+          "RMSE": 43.0788,
+          "R2": -0.0138,
+          "SeasonalNaive_MAE": 37.0833,
+          "SeasonalNaive_RMSE": 56.3553,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "20728",
+          "samples": 120,
+          "actual_mean": 39.69,
+          "pred_mean": 37.79,
+          "MAE": 29.1651,
+          "RMSE": 43.1398,
+          "R2": 0.1711,
+          "SeasonalNaive_MAE": 42.55,
+          "SeasonalNaive_RMSE": 74.4697,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22383",
+          "samples": 120,
+          "actual_mean": 40.95,
+          "pred_mean": 41.48,
+          "MAE": 27.6126,
+          "RMSE": 43.4365,
+          "R2": 0.1512,
+          "SeasonalNaive_MAE": 31.3,
+          "SeasonalNaive_RMSE": 52.5577,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "23076",
+          "samples": 90,
+          "actual_mean": 29.44,
+          "pred_mean": 40.46,
+          "MAE": 30.839,
+          "RMSE": 44.4811,
+          "R2": 0.0038,
+          "SeasonalNaive_MAE": 29.0667,
+          "SeasonalNaive_RMSE": 45.616,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22993",
+          "samples": 120,
+          "actual_mean": 37.08,
+          "pred_mean": 51.1,
+          "MAE": 32.7696,
+          "RMSE": 44.6577,
+          "R2": 0.0835,
+          "SeasonalNaive_MAE": 40.2,
+          "SeasonalNaive_RMSE": 62.4286,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "21985",
+          "samples": 120,
+          "actual_mean": 18.17,
+          "pred_mean": 31.2,
+          "MAE": 25.6742,
+          "RMSE": 44.926,
+          "R2": -0.1341,
+          "SeasonalNaive_MAE": 24.75,
+          "SeasonalNaive_RMSE": 53.4196,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "23298",
+          "samples": 60,
+          "actual_mean": 30.47,
+          "pred_mean": 50.62,
+          "MAE": 35.0791,
+          "RMSE": 45.1659,
+          "R2": -0.1208,
+          "SeasonalNaive_MAE": 39.1167,
+          "SeasonalNaive_RMSE": 69.3055,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "21982",
+          "samples": 120,
+          "actual_mean": 14.18,
+          "pred_mean": 27.29,
+          "MAE": 23.5012,
+          "RMSE": 45.6805,
+          "R2": -0.0715,
+          "SeasonalNaive_MAE": 15.8667,
+          "SeasonalNaive_RMSE": 46.2645,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "85099C",
+          "samples": 120,
+          "actual_mean": 35.58,
+          "pred_mean": 41.91,
+          "MAE": 35.8191,
+          "RMSE": 45.7071,
+          "R2": 0.0655,
+          "SeasonalNaive_MAE": 54.4167,
+          "SeasonalNaive_RMSE": 87.0819,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22411",
+          "samples": 120,
+          "actual_mean": 35.98,
+          "pred_mean": 35.01,
+          "MAE": 29.8307,
+          "RMSE": 46.0896,
+          "R2": 0.0643,
+          "SeasonalNaive_MAE": 44.525,
+          "SeasonalNaive_RMSE": 74.9086,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "23230",
+          "samples": 120,
+          "actual_mean": 22.71,
+          "pred_mean": 35.4,
+          "MAE": 32.6683,
+          "RMSE": 46.3559,
+          "R2": -0.0063,
+          "SeasonalNaive_MAE": 27.9167,
+          "SeasonalNaive_RMSE": 49.0535,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22384",
+          "samples": 120,
+          "actual_mean": 34.12,
+          "pred_mean": 34.85,
+          "MAE": 28.4448,
+          "RMSE": 46.7669,
+          "R2": 0.1262,
+          "SeasonalNaive_MAE": 36.3583,
+          "SeasonalNaive_RMSE": 56.5549,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "84947",
+          "samples": 120,
+          "actual_mean": 21.78,
+          "pred_mean": 26.87,
+          "MAE": 28.1644,
+          "RMSE": 47.0985,
+          "R2": 0.017,
+          "SeasonalNaive_MAE": 32.35,
+          "SeasonalNaive_RMSE": 60.5771,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22791",
+          "samples": 120,
+          "actual_mean": 20.27,
+          "pred_mean": 25.28,
+          "MAE": 29.0255,
+          "RMSE": 47.1689,
+          "R2": -0.0048,
+          "SeasonalNaive_MAE": 20.9,
+          "SeasonalNaive_RMSE": 48.2335,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22189",
+          "samples": 120,
+          "actual_mean": 13.85,
+          "pred_mean": 24.28,
+          "MAE": 27.9269,
+          "RMSE": 47.2942,
+          "R2": -0.0807,
+          "SeasonalNaive_MAE": 33.6083,
+          "SeasonalNaive_RMSE": 101.4592,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22385",
+          "samples": 120,
+          "actual_mean": 22.24,
+          "pred_mean": 25.94,
+          "MAE": 24.6255,
+          "RMSE": 47.4652,
+          "R2": 0.0736,
+          "SeasonalNaive_MAE": 28.5083,
+          "SeasonalNaive_RMSE": 63.5094,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "23204",
+          "samples": 90,
+          "actual_mean": 27.63,
+          "pred_mean": 46.17,
+          "MAE": 33.7739,
+          "RMSE": 47.7057,
+          "R2": -0.1253,
+          "SeasonalNaive_MAE": 41.0667,
+          "SeasonalNaive_RMSE": 75.7186,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "21931",
+          "samples": 120,
+          "actual_mean": 42.05,
+          "pred_mean": 38.9,
+          "MAE": 33.3901,
+          "RMSE": 48.258,
+          "R2": 0.1542,
+          "SeasonalNaive_MAE": 36.2167,
+          "SeasonalNaive_RMSE": 57.736,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "85152",
+          "samples": 120,
+          "actual_mean": 24.26,
+          "pred_mean": 24.39,
+          "MAE": 24.5791,
+          "RMSE": 49.2339,
+          "R2": 0.0821,
+          "SeasonalNaive_MAE": 36.1167,
+          "SeasonalNaive_RMSE": 76.1828,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "20974",
+          "samples": 120,
+          "actual_mean": 21.69,
+          "pred_mean": 24.83,
+          "MAE": 24.9698,
+          "RMSE": 49.6605,
+          "R2": 0.0466,
+          "SeasonalNaive_MAE": 34.9167,
+          "SeasonalNaive_RMSE": 93.4094,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "20719",
+          "samples": 120,
+          "actual_mean": 34.89,
+          "pred_mean": 44.87,
+          "MAE": 34.0735,
+          "RMSE": 50.0777,
+          "R2": 0.0892,
+          "SeasonalNaive_MAE": 44.0583,
+          "SeasonalNaive_RMSE": 71.3869,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "82583",
+          "samples": 120,
+          "actual_mean": 20.12,
+          "pred_mean": 22.42,
+          "MAE": 24.6648,
+          "RMSE": 51.0983,
+          "R2": 0.044,
+          "SeasonalNaive_MAE": 23.75,
+          "SeasonalNaive_RMSE": 58.8269,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "21121",
+          "samples": 120,
+          "actual_mean": 20.18,
+          "pred_mean": 26.09,
+          "MAE": 26.3506,
+          "RMSE": 51.4228,
+          "R2": 0.0558,
+          "SeasonalNaive_MAE": 30.925,
+          "SeasonalNaive_RMSE": 72.1046,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22355",
+          "samples": 120,
+          "actual_mean": 43.88,
+          "pred_mean": 56.21,
+          "MAE": 42.2653,
+          "RMSE": 53.0066,
+          "R2": 0.1097,
+          "SeasonalNaive_MAE": 38.6333,
+          "SeasonalNaive_RMSE": 59.5875,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "23202",
+          "samples": 60,
+          "actual_mean": 43.4,
+          "pred_mean": 61.67,
+          "MAE": 40.9481,
+          "RMSE": 53.8722,
+          "R2": 0.0305,
+          "SeasonalNaive_MAE": 49.6333,
+          "SeasonalNaive_RMSE": 76.44,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "84945",
+          "samples": 120,
+          "actual_mean": 26.06,
+          "pred_mean": 30.9,
+          "MAE": 32.0288,
+          "RMSE": 54.4531,
+          "R2": 0.0415,
+          "SeasonalNaive_MAE": 36.625,
+          "SeasonalNaive_RMSE": 67.9844,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22470",
+          "samples": 120,
+          "actual_mean": 21.53,
+          "pred_mean": 24.29,
+          "MAE": 25.0912,
+          "RMSE": 54.5122,
+          "R2": 0.036,
+          "SeasonalNaive_MAE": 20.6833,
+          "SeasonalNaive_RMSE": 58.6084,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "21166",
+          "samples": 120,
+          "actual_mean": 26.97,
+          "pred_mean": 28.77,
+          "MAE": 32.2097,
+          "RMSE": 54.5678,
+          "R2": 0.0582,
+          "SeasonalNaive_MAE": 39.2917,
+          "SeasonalNaive_RMSE": 79.8131,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "23293",
+          "samples": 30,
+          "actual_mean": 31.5,
+          "pred_mean": 77.31,
+          "MAE": 48.9514,
+          "RMSE": 55.1733,
+          "R2": -2.3548,
+          "SeasonalNaive_MAE": 52.9,
+          "SeasonalNaive_RMSE": 95.6192,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "21326",
+          "samples": 120,
+          "actual_mean": 25.7,
+          "pred_mean": 32.75,
+          "MAE": 36.9759,
+          "RMSE": 56.7357,
+          "R2": -0.0305,
+          "SeasonalNaive_MAE": 36.2667,
+          "SeasonalNaive_RMSE": 68.0446,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22988",
+          "samples": 120,
+          "actual_mean": 19.08,
+          "pred_mean": 28.07,
+          "MAE": 31.0691,
+          "RMSE": 56.8691,
+          "R2": 0.0103,
+          "SeasonalNaive_MAE": 65.7,
+          "SeasonalNaive_RMSE": 175.2975,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "23209",
+          "samples": 60,
+          "actual_mean": 55.87,
+          "pred_mean": 81.99,
+          "MAE": 49.2197,
+          "RMSE": 56.8701,
+          "R2": -0.013,
+          "SeasonalNaive_MAE": 40.2167,
+          "SeasonalNaive_RMSE": 55.4766,
+          "beats_seasonal_naive": false
+        },
+        {
+          "StockCode": "23207",
+          "samples": 90,
+          "actual_mean": 30.27,
+          "pred_mean": 44.49,
+          "MAE": 33.2981,
+          "RMSE": 56.9494,
+          "R2": -0.0199,
+          "SeasonalNaive_MAE": 38.9444,
+          "SeasonalNaive_RMSE": 82.786,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "21891",
+          "samples": 120,
+          "actual_mean": 19.27,
+          "pred_mean": 23.57,
+          "MAE": 27.5823,
+          "RMSE": 59.4847,
+          "R2": 0.0051,
+          "SeasonalNaive_MAE": 38.8417,
+          "SeasonalNaive_RMSE": 101.8431,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "75049L",
+          "samples": 120,
+          "actual_mean": 22.67,
+          "pred_mean": 25.04,
+          "MAE": 35.8466,
+          "RMSE": 60.0416,
+          "R2": -0.0236,
+          "SeasonalNaive_MAE": 42.95,
+          "SeasonalNaive_RMSE": 95.9091,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "20724",
+          "samples": 120,
+          "actual_mean": 46.33,
+          "pred_mean": 55.25,
+          "MAE": 40.7127,
+          "RMSE": 60.408,
+          "R2": 0.1326,
+          "SeasonalNaive_MAE": 49.9167,
+          "SeasonalNaive_RMSE": 85.1159,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "21980",
+          "samples": 120,
+          "actual_mean": 22.86,
+          "pred_mean": 26.41,
+          "MAE": 28.2909,
+          "RMSE": 61.3431,
+          "R2": 0.0235,
+          "SeasonalNaive_MAE": 25.5667,
+          "SeasonalNaive_RMSE": 65.9093,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "20725",
+          "samples": 120,
+          "actual_mean": 56.69,
+          "pred_mean": 65.24,
+          "MAE": 44.4697,
+          "RMSE": 61.9385,
+          "R2": 0.1013,
+          "SeasonalNaive_MAE": 56.9083,
+          "SeasonalNaive_RMSE": 87.617,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "23077",
+          "samples": 90,
+          "actual_mean": 33.84,
+          "pred_mean": 40.03,
+          "MAE": 37.2696,
+          "RMSE": 62.373,
+          "R2": 0.05,
+          "SeasonalNaive_MAE": 37.2667,
+          "SeasonalNaive_RMSE": 65.277,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "21498",
+          "samples": 120,
+          "actual_mean": 30.42,
+          "pred_mean": 37.07,
+          "MAE": 31.6249,
+          "RMSE": 62.4559,
+          "R2": 0.015,
+          "SeasonalNaive_MAE": 41.25,
+          "SeasonalNaive_RMSE": 73.6687,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "71459",
+          "samples": 120,
+          "actual_mean": 42.29,
+          "pred_mean": 49.93,
+          "MAE": 48.5493,
+          "RMSE": 62.6166,
+          "R2": 0.0861,
+          "SeasonalNaive_MAE": 53.5583,
+          "SeasonalNaive_RMSE": 88.1722,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "21790",
+          "samples": 120,
+          "actual_mean": 41.88,
+          "pred_mean": 35.47,
+          "MAE": 36.9159,
+          "RMSE": 63.1441,
+          "R2": 0.1079,
+          "SeasonalNaive_MAE": 43.475,
+          "SeasonalNaive_RMSE": 75.729,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "84946",
+          "samples": 120,
+          "actual_mean": 47.83,
+          "pred_mean": 54.39,
+          "MAE": 44.3531,
+          "RMSE": 63.6918,
+          "R2": 0.1189,
+          "SeasonalNaive_MAE": 52.4083,
+          "SeasonalNaive_RMSE": 84.2057,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "16045",
+          "samples": 120,
+          "actual_mean": 30.83,
+          "pred_mean": 27.46,
+          "MAE": 43.2083,
+          "RMSE": 63.6963,
+          "R2": 0.0563,
+          "SeasonalNaive_MAE": 45.0,
+          "SeasonalNaive_RMSE": 84.6562,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "21918",
+          "samples": 120,
+          "actual_mean": 21.32,
+          "pred_mean": 28.07,
+          "MAE": 30.3545,
+          "RMSE": 65.87,
+          "R2": 0.0389,
+          "SeasonalNaive_MAE": 27.9167,
+          "SeasonalNaive_RMSE": 65.1054,
+          "beats_seasonal_naive": false
+        },
+        {
+          "StockCode": "22693",
+          "samples": 120,
+          "actual_mean": 26.06,
+          "pred_mean": 56.25,
+          "MAE": 46.1574,
+          "RMSE": 67.6782,
+          "R2": -0.3039,
+          "SeasonalNaive_MAE": 27.65,
+          "SeasonalNaive_RMSE": 63.846,
+          "beats_seasonal_naive": false
+        },
+        {
+          "StockCode": "22629",
+          "samples": 120,
+          "actual_mean": 34.94,
+          "pred_mean": 42.97,
+          "MAE": 39.9861,
+          "RMSE": 68.3508,
+          "R2": 0.0542,
+          "SeasonalNaive_MAE": 40.2083,
+          "SeasonalNaive_RMSE": 74.3213,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22379",
+          "samples": 120,
+          "actual_mean": 19.17,
+          "pred_mean": 24.2,
+          "MAE": 24.9032,
+          "RMSE": 68.9768,
+          "R2": 0.0159,
+          "SeasonalNaive_MAE": 29.375,
+          "SeasonalNaive_RMSE": 80.2351,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22489",
+          "samples": 120,
+          "actual_mean": 29.59,
+          "pred_mean": 29.86,
+          "MAE": 33.229,
+          "RMSE": 69.156,
+          "R2": 0.0333,
+          "SeasonalNaive_MAE": 31.7917,
+          "SeasonalNaive_RMSE": 77.286,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "23232",
+          "samples": 120,
+          "actual_mean": 28.96,
+          "pred_mean": 32.04,
+          "MAE": 35.5278,
+          "RMSE": 69.7902,
+          "R2": 0.0238,
+          "SeasonalNaive_MAE": 37.7083,
+          "SeasonalNaive_RMSE": 81.8726,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22630",
+          "samples": 120,
+          "actual_mean": 33.96,
+          "pred_mean": 34.71,
+          "MAE": 37.075,
+          "RMSE": 70.8912,
+          "R2": 0.0575,
+          "SeasonalNaive_MAE": 37.8583,
+          "SeasonalNaive_RMSE": 77.1031,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "23206",
+          "samples": 90,
+          "actual_mean": 46.26,
+          "pred_mean": 73.89,
+          "MAE": 50.8413,
+          "RMSE": 70.9354,
+          "R2": -0.0996,
+          "SeasonalNaive_MAE": 36.5111,
+          "SeasonalNaive_RMSE": 68.8683,
+          "beats_seasonal_naive": false
+        },
+        {
+          "StockCode": "22969",
+          "samples": 120,
+          "actual_mean": 24.91,
+          "pred_mean": 39.47,
+          "MAE": 34.1275,
+          "RMSE": 71.562,
+          "R2": -0.0742,
+          "SeasonalNaive_MAE": 30.8083,
+          "SeasonalNaive_RMSE": 77.3013,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22659",
+          "samples": 120,
+          "actual_mean": 32.27,
+          "pred_mean": 34.81,
+          "MAE": 41.2883,
+          "RMSE": 71.6417,
+          "R2": 0.0564,
+          "SeasonalNaive_MAE": 49.4667,
+          "SeasonalNaive_RMSE": 103.5543,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "21731",
+          "samples": 120,
+          "actual_mean": 35.47,
+          "pred_mean": 36.87,
+          "MAE": 37.4639,
+          "RMSE": 71.6995,
+          "R2": 0.0799,
+          "SeasonalNaive_MAE": 52.9167,
+          "SeasonalNaive_RMSE": 116.8067,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "84755",
+          "samples": 120,
+          "actual_mean": 59.72,
+          "pred_mean": 62.64,
+          "MAE": 55.003,
+          "RMSE": 73.2373,
+          "R2": 0.105,
+          "SeasonalNaive_MAE": 52.0833,
+          "SeasonalNaive_RMSE": 84.1532,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "47566",
+          "samples": 120,
+          "actual_mean": 65.63,
+          "pred_mean": 66.02,
+          "MAE": 55.8149,
+          "RMSE": 74.9524,
+          "R2": 0.1201,
+          "SeasonalNaive_MAE": 62.4,
+          "SeasonalNaive_RMSE": 94.0237,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22699",
+          "samples": 120,
+          "actual_mean": 31.54,
+          "pred_mean": 25.54,
+          "MAE": 25.9784,
+          "RMSE": 75.7399,
+          "R2": 0.0326,
+          "SeasonalNaive_MAE": 29.175,
+          "SeasonalNaive_RMSE": 77.0599,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "20668",
+          "samples": 120,
+          "actual_mean": 26.82,
+          "pred_mean": 25.02,
+          "MAE": 38.5388,
+          "RMSE": 77.4917,
+          "R2": -0.0017,
+          "SeasonalNaive_MAE": 34.5667,
+          "SeasonalNaive_RMSE": 80.755,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22610",
+          "samples": 120,
+          "actual_mean": 36.37,
+          "pred_mean": 27.9,
+          "MAE": 37.1185,
+          "RMSE": 84.1003,
+          "R2": 0.0387,
+          "SeasonalNaive_MAE": 37.7,
+          "SeasonalNaive_RMSE": 85.1327,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "20713",
+          "samples": 120,
+          "actual_mean": 32.94,
+          "pred_mean": 31.69,
+          "MAE": 41.701,
+          "RMSE": 84.7666,
+          "R2": 0.051,
+          "SeasonalNaive_MAE": 43.3083,
+          "SeasonalNaive_RMSE": 88.0625,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22086",
+          "samples": 120,
+          "actual_mean": 35.19,
+          "pred_mean": 26.69,
+          "MAE": 35.5007,
+          "RMSE": 85.8224,
+          "R2": 0.1276,
+          "SeasonalNaive_MAE": 31.5,
+          "SeasonalNaive_RMSE": 87.0924,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "23310",
+          "samples": 60,
+          "actual_mean": 62.12,
+          "pred_mean": 70.37,
+          "MAE": 64.4844,
+          "RMSE": 86.1266,
+          "R2": 0.04,
+          "SeasonalNaive_MAE": 58.6833,
+          "SeasonalNaive_RMSE": 98.7299,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22469",
+          "samples": 120,
+          "actual_mean": 40.07,
+          "pred_mean": 53.25,
+          "MAE": 47.8739,
+          "RMSE": 87.3124,
+          "R2": 0.0092,
+          "SeasonalNaive_MAE": 37.5333,
+          "SeasonalNaive_RMSE": 93.253,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "21213",
+          "samples": 120,
+          "actual_mean": 41.94,
+          "pred_mean": 49.27,
+          "MAE": 45.7916,
+          "RMSE": 87.3194,
+          "R2": 0.0469,
+          "SeasonalNaive_MAE": 48.3917,
+          "SeasonalNaive_RMSE": 101.6114,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "21181",
+          "samples": 120,
+          "actual_mean": 37.12,
+          "pred_mean": 37.17,
+          "MAE": 45.0872,
+          "RMSE": 90.072,
+          "R2": 0.0517,
+          "SeasonalNaive_MAE": 32.075,
+          "SeasonalNaive_RMSE": 88.3428,
+          "beats_seasonal_naive": false
+        },
+        {
+          "StockCode": "84991",
+          "samples": 120,
+          "actual_mean": 45.26,
+          "pred_mean": 60.86,
+          "MAE": 58.3649,
+          "RMSE": 90.8225,
+          "R2": 0.0414,
+          "SeasonalNaive_MAE": 53.0583,
+          "SeasonalNaive_RMSE": 98.2746,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "23201",
+          "samples": 90,
+          "actual_mean": 50.68,
+          "pred_mean": 61.69,
+          "MAE": 53.7745,
+          "RMSE": 91.9267,
+          "R2": 0.0507,
+          "SeasonalNaive_MAE": 60.6111,
+          "SeasonalNaive_RMSE": 112.0801,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22149",
+          "samples": 120,
+          "actual_mean": 25.73,
+          "pred_mean": 22.47,
+          "MAE": 33.0017,
+          "RMSE": 93.003,
+          "R2": 0.0299,
+          "SeasonalNaive_MAE": 29.4,
+          "SeasonalNaive_RMSE": 91.6788,
+          "beats_seasonal_naive": false
+        },
+        {
+          "StockCode": "21975",
+          "samples": 120,
+          "actual_mean": 34.91,
+          "pred_mean": 41.32,
+          "MAE": 43.0292,
+          "RMSE": 98.1915,
+          "R2": 0.0287,
+          "SeasonalNaive_MAE": 46.55,
+          "SeasonalNaive_RMSE": 110.8276,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22998",
+          "samples": 120,
+          "actual_mean": 45.62,
+          "pred_mean": 46.08,
+          "MAE": 50.435,
+          "RMSE": 98.9113,
+          "R2": 0.066,
+          "SeasonalNaive_MAE": 67.5333,
+          "SeasonalNaive_RMSE": 142.8628,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22952",
+          "samples": 120,
+          "actual_mean": 47.47,
+          "pred_mean": 29.46,
+          "MAE": 46.998,
+          "RMSE": 100.2283,
+          "R2": 0.098,
+          "SeasonalNaive_MAE": 37.9667,
+          "SeasonalNaive_RMSE": 101.7058,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "23307",
+          "samples": 60,
+          "actual_mean": 67.22,
+          "pred_mean": 86.61,
+          "MAE": 66.2137,
+          "RMSE": 100.5769,
+          "R2": -0.0136,
+          "SeasonalNaive_MAE": 75.8833,
+          "SeasonalNaive_RMSE": 129.704,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "85099F",
+          "samples": 120,
+          "actual_mean": 45.61,
+          "pred_mean": 54.94,
+          "MAE": 58.6853,
+          "RMSE": 102.0497,
+          "R2": 0.0601,
+          "SeasonalNaive_MAE": 69.6083,
+          "SeasonalNaive_RMSE": 129.9628,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22151",
+          "samples": 120,
+          "actual_mean": 42.74,
+          "pred_mean": 51.63,
+          "MAE": 61.8383,
+          "RMSE": 108.6784,
+          "R2": 0.0016,
+          "SeasonalNaive_MAE": 100.4417,
+          "SeasonalNaive_RMSE": 232.9287,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "21497",
+          "samples": 120,
+          "actual_mean": 32.92,
+          "pred_mean": 26.53,
+          "MAE": 33.8341,
+          "RMSE": 110.7578,
+          "R2": 0.0211,
+          "SeasonalNaive_MAE": 36.4583,
+          "SeasonalNaive_RMSE": 114.1773,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22386",
+          "samples": 120,
+          "actual_mean": 68.92,
+          "pred_mean": 61.54,
+          "MAE": 64.3627,
+          "RMSE": 111.681,
+          "R2": 0.0893,
+          "SeasonalNaive_MAE": 79.7833,
+          "SeasonalNaive_RMSE": 133.5804,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "23203",
+          "samples": 60,
+          "actual_mean": 84.1,
+          "pred_mean": 115.98,
+          "MAE": 85.2606,
+          "RMSE": 111.7214,
+          "R2": 0.054,
+          "SeasonalNaive_MAE": 128.8333,
+          "SeasonalNaive_RMSE": 224.2783,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "84879",
+          "samples": 120,
+          "actual_mean": 86.28,
+          "pred_mean": 98.83,
+          "MAE": 68.784,
+          "RMSE": 114.1251,
+          "R2": 0.1044,
+          "SeasonalNaive_MAE": 185.6,
+          "SeasonalNaive_RMSE": 625.4897,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "85123A",
+          "samples": 120,
+          "actual_mean": 81.98,
+          "pred_mean": 116.8,
+          "MAE": 86.3493,
+          "RMSE": 117.5125,
+          "R2": -0.0441,
+          "SeasonalNaive_MAE": 67.2083,
+          "SeasonalNaive_RMSE": 118.5567,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "15034",
+          "samples": 120,
+          "actual_mean": 25.47,
+          "pred_mean": 23.34,
+          "MAE": 37.809,
+          "RMSE": 121.0121,
+          "R2": -0.0331,
+          "SeasonalNaive_MAE": 36.0833,
+          "SeasonalNaive_RMSE": 123.8572,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22147",
+          "samples": 120,
+          "actual_mean": 30.07,
+          "pred_mean": 22.84,
+          "MAE": 34.0896,
+          "RMSE": 121.5706,
+          "R2": 0.0214,
+          "SeasonalNaive_MAE": 35.2083,
+          "SeasonalNaive_RMSE": 122.4308,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "21703",
+          "samples": 120,
+          "actual_mean": 36.06,
+          "pred_mean": 26.64,
+          "MAE": 43.4926,
+          "RMSE": 123.659,
+          "R2": 0.02,
+          "SeasonalNaive_MAE": 44.3333,
+          "SeasonalNaive_RMSE": 127.6203,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "84212",
+          "samples": 120,
+          "actual_mean": 30.77,
+          "pred_mean": 31.25,
+          "MAE": 48.488,
+          "RMSE": 124.166,
+          "R2": -0.0217,
+          "SeasonalNaive_MAE": 36.8583,
+          "SeasonalNaive_RMSE": 127.877,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "23199",
+          "samples": 90,
+          "actual_mean": 62.21,
+          "pred_mean": 78.39,
+          "MAE": 70.6843,
+          "RMSE": 127.1731,
+          "R2": 0.0278,
+          "SeasonalNaive_MAE": 74.4333,
+          "SeasonalNaive_RMSE": 141.8883,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22616",
+          "samples": 120,
+          "actual_mean": 49.72,
+          "pred_mean": 82.57,
+          "MAE": 87.9004,
+          "RMSE": 134.6434,
+          "R2": -0.0198,
+          "SeasonalNaive_MAE": 130.4667,
+          "SeasonalNaive_RMSE": 289.8021,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22178",
+          "samples": 120,
+          "actual_mean": 75.58,
+          "pred_mean": 74.76,
+          "MAE": 73.1049,
+          "RMSE": 136.4959,
+          "R2": 0.0234,
+          "SeasonalNaive_MAE": 73.2917,
+          "SeasonalNaive_RMSE": 151.9597,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "84992",
+          "samples": 120,
+          "actual_mean": 32.98,
+          "pred_mean": 42.36,
+          "MAE": 46.3759,
+          "RMSE": 137.0891,
+          "R2": 0.0128,
+          "SeasonalNaive_MAE": 42.2333,
+          "SeasonalNaive_RMSE": 144.5632,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "84568",
+          "samples": 120,
+          "actual_mean": 26.79,
+          "pred_mean": 38.08,
+          "MAE": 56.3093,
+          "RMSE": 142.19,
+          "R2": -0.0045,
+          "SeasonalNaive_MAE": 37.1417,
+          "SeasonalNaive_RMSE": 154.2134,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22492",
+          "samples": 120,
+          "actual_mean": 80.7,
+          "pred_mean": 73.99,
+          "MAE": 88.5165,
+          "RMSE": 167.3075,
+          "R2": 0.0423,
+          "SeasonalNaive_MAE": 96.3417,
+          "SeasonalNaive_RMSE": 203.7525,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "21915",
+          "samples": 120,
+          "actual_mean": 63.72,
+          "pred_mean": 47.09,
+          "MAE": 61.0808,
+          "RMSE": 175.3245,
+          "R2": 0.0268,
+          "SeasonalNaive_MAE": 96.0417,
+          "SeasonalNaive_RMSE": 226.447,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "21212",
+          "samples": 120,
+          "actual_mean": 88.63,
+          "pred_mean": 126.58,
+          "MAE": 104.4294,
+          "RMSE": 182.4575,
+          "R2": -0.0333,
+          "SeasonalNaive_MAE": 94.1,
+          "SeasonalNaive_RMSE": 193.784,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "85099B",
+          "samples": 120,
+          "actual_mean": 136.42,
+          "pred_mean": 152.23,
+          "MAE": 122.1085,
+          "RMSE": 185.7161,
+          "R2": 0.045,
+          "SeasonalNaive_MAE": 129.5583,
+          "SeasonalNaive_RMSE": 198.8166,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "17003",
+          "samples": 120,
+          "actual_mean": 71.93,
+          "pred_mean": 69.4,
+          "MAE": 95.0571,
+          "RMSE": 195.8542,
+          "R2": 0.0312,
+          "SeasonalNaive_MAE": 118.3667,
+          "SeasonalNaive_RMSE": 268.4592,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "15036",
+          "samples": 120,
+          "actual_mean": 79.08,
+          "pred_mean": 83.57,
+          "MAE": 102.1405,
+          "RMSE": 217.6727,
+          "R2": 0.0038,
+          "SeasonalNaive_MAE": 138.0167,
+          "SeasonalNaive_RMSE": 317.9336,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "21977",
+          "samples": 120,
+          "actual_mean": 78.9,
+          "pred_mean": 80.46,
+          "MAE": 102.8191,
+          "RMSE": 274.3674,
+          "R2": 0.0163,
+          "SeasonalNaive_MAE": 85.4833,
+          "SeasonalNaive_RMSE": 284.0028,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "16014",
+          "samples": 120,
+          "actual_mean": 49.63,
+          "pred_mean": 32.71,
+          "MAE": 75.1456,
+          "RMSE": 275.7502,
+          "R2": -0.0031,
+          "SeasonalNaive_MAE": 50.075,
+          "SeasonalNaive_RMSE": 279.7573,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "20971",
+          "samples": 120,
+          "actual_mean": 54.01,
+          "pred_mean": 22.47,
+          "MAE": 59.1767,
+          "RMSE": 290.6646,
+          "R2": -0.0022,
+          "SeasonalNaive_MAE": 59.6083,
+          "SeasonalNaive_RMSE": 294.1167,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "23084",
+          "samples": 60,
+          "actual_mean": 137.83,
+          "pred_mean": 30.67,
+          "MAE": 152.3851,
+          "RMSE": 432.3807,
+          "R2": -0.0457,
+          "SeasonalNaive_MAE": 139.05,
+          "SeasonalNaive_RMSE": 442.8653,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "22197",
+          "samples": 120,
+          "actual_mean": 150.22,
+          "pred_mean": 110.71,
+          "MAE": 141.0244,
+          "RMSE": 440.7483,
+          "R2": 0.0095,
+          "SeasonalNaive_MAE": 239.3833,
+          "SeasonalNaive_RMSE": 598.979,
+          "beats_seasonal_naive": true
+        },
+        {
+          "StockCode": "84077",
+          "samples": 120,
+          "actual_mean": 148.3,
+          "pred_mean": 186.82,
+          "MAE": 168.4837,
+          "RMSE": 453.6496,
+          "R2": -0.0067,
+          "SeasonalNaive_MAE": 188.475,
+          "SeasonalNaive_RMSE": 516.7839,
+          "beats_seasonal_naive": true
+        }
+      ]
+    },
+    "test_origin_recursive": {
+      "origin_date": "2011-10-31",
+      "horizon_metrics": {
+        "7d": {
+          "horizon_days": 7,
+          "samples": 1050,
+          "ml": {
+            "MAE": 51.0859,
+            "MSE": 25128.9763,
+            "RMSE": 158.5212,
+            "R2": 0.0726
+          },
+          "seasonal_naive": {
+            "MAE": 63.839,
+            "MSE": 58859.921,
+            "RMSE": 242.6106,
+            "R2": -1.1721
+          },
+          "beats_seasonal_naive_rmse": true
+        },
+        "14d": {
+          "horizon_days": 14,
+          "samples": 2100,
+          "ml": {
+            "MAE": 49.8956,
+            "MSE": 19320.6466,
+            "RMSE": 138.9987,
+            "R2": 0.1068
+          },
+          "seasonal_naive": {
+            "MAE": 62.7376,
+            "MSE": 53486.3119,
+            "RMSE": 231.2711,
+            "R2": -1.4728
+          },
+          "beats_seasonal_naive_rmse": true
+        },
+        "30d": {
+          "horizon_days": 30,
+          "samples": 4500,
+          "ml": {
+            "MAE": 46.8151,
+            "MSE": 14062.7724,
+            "RMSE": 118.5866,
+            "R2": 0.1287
+          },
+          "seasonal_naive": {
+            "MAE": 58.938,
+            "MSE": 46785.9811,
+            "RMSE": 216.3007,
+            "R2": -1.8987
+          },
+          "beats_seasonal_naive_rmse": true
+        }
+      }
+    }
+  },
+  "model_explanations": {
+    "Naive Baseline (t-1)": "Predicts previous day's demand verbatim (Test MAE=61.0627, RMSE=161.1743, R2=-0.5643).",
+    "Seasonal Naive Baseline (t-7)": "Predicts demand from the same weekday 7 days earlier (Test MAE=53.8403, RMSE=164.3912, R2=-0.6273).",
+    "Ridge Regression": "Ridge Regression [SELECTED CHAMPION via Chronological CV] using 'chronological_target' encoding. CV RMSE=98.7321 (Train RMSE=97.6733, Test MAE=43.8456, RMSE=115.7574, R2=0.1931); outperforms Seasonal Naive baseline RMSE (164.3912).",
+    "Random Forest": "Random Forest using 'chronological_target' encoding. CV RMSE=105.3517 (Train RMSE=84.6117, Test MAE=47.4632, RMSE=119.7101, R2=0.1371); outperforms Seasonal Naive baseline RMSE (164.3912).",
+    "Gradient Boosting": "Gradient Boosting using 'chronological_target' encoding. CV RMSE=109.6189 (Train RMSE=79.8746, Test MAE=47.0455, RMSE=119.4426, R2=0.1409); outperforms Seasonal Naive baseline RMSE (164.3912).",
+    "Tuned Gradient Boosting": "Tuned Gradient Boosting using 'chronological_target' encoding. CV RMSE=102.2475 (Train RMSE=89.3747, Test MAE=46.1229, RMSE=115.6462, R2=0.1947); outperforms Seasonal Naive baseline RMSE (164.3912). Tuned params: {'subsample': 0.85, 'n_estimators': 100, 'min_samples_split': 12, 'max_depth': 4, 'learning_rate': 0.06}."
   }
 }

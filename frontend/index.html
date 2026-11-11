@@ -76,7 +76,7 @@
         <div class="header-right">
           <div class="model-badge">
             <span class="badge-dot"></span>
-            <span>Best Model: <strong>Gradient Boosting</strong></span>
+            <span>Best Model: <strong id="header-best-model">Loading...</strong></span>
           </div>
           <a href="/docs" target="_blank" class="docs-btn">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
@@ -239,7 +239,7 @@
                   <select id="forecast-product-select" class="form-control" required>
                     <option value="" disabled selected>Loading product catalog...</option>
                   </select>
-                  <small class="form-hint">Choose from 150+ actively modeled retail SKUs</small>
+                  <small class="form-hint" id="forecast-sku-hint">Choose from actively modeled retail SKUs</small>
                 </div>
 
                 <div class="form-group">
@@ -457,64 +457,28 @@
 
         <!-- ================= SECTION 4: MODEL PERFORMANCE ================= -->
         <section id="section-performance" class="page-section">
-          <!-- Model Comparison Metrics Cards -->
+          <!-- Model Comparison Metrics Cards (Populated Dynamically from /model-comparison) -->
           <div class="models-grid" id="models-comparison-grid">
             <div class="model-stat-card">
               <div class="model-stat-header">
-                <h4>Linear Regression</h4>
-                <span class="model-type-tag">Baseline</span>
+                <h4>Loading Evaluated Models...</h4>
+                <span class="model-type-tag">Pending</span>
               </div>
               <div class="stat-metrics">
-                <div class="stat-row"><span>MAE:</span> <strong id="m-lr-mae">...</strong></div>
-                <div class="stat-row"><span>RMSE:</span> <strong id="m-lr-rmse">...</strong></div>
-                <div class="stat-row"><span>R² Score:</span> <strong id="m-lr-r2">...</strong></div>
-              </div>
-            </div>
-
-            <div class="model-stat-card">
-              <div class="model-stat-header">
-                <h4>Random Forest</h4>
-                <span class="model-type-tag">Ensemble</span>
-              </div>
-              <div class="stat-metrics">
-                <div class="stat-row"><span>MAE:</span> <strong id="m-rf-mae">...</strong></div>
-                <div class="stat-row"><span>RMSE:</span> <strong id="m-rf-rmse">...</strong></div>
-                <div class="stat-row"><span>R² Score:</span> <strong id="m-rf-r2">...</strong></div>
-              </div>
-            </div>
-
-            <div class="model-stat-card highlight">
-              <div class="model-stat-header">
-                <h4>Gradient Boosting</h4>
-                <span class="model-type-tag winner">Champion</span>
-              </div>
-              <div class="stat-metrics">
-                <div class="stat-row"><span>MAE:</span> <strong id="m-gb-mae">...</strong></div>
-                <div class="stat-row"><span>RMSE:</span> <strong id="m-gb-rmse">...</strong></div>
-                <div class="stat-row"><span>R² Score:</span> <strong id="m-gb-r2">...</strong></div>
-              </div>
-            </div>
-
-            <div class="model-stat-card">
-              <div class="model-stat-header">
-                <h4>Tuned Gradient Boosting</h4>
-                <span class="model-type-tag">Optimized</span>
-              </div>
-              <div class="stat-metrics">
-                <div class="stat-row"><span>MAE:</span> <strong id="m-tuned-mae">...</strong></div>
-                <div class="stat-row"><span>RMSE:</span> <strong id="m-tuned-rmse">...</strong></div>
-                <div class="stat-row"><span>R² Score:</span> <strong id="m-tuned-r2">...</strong></div>
+                <div class="stat-row"><span>MAE:</span> <strong>...</strong></div>
+                <div class="stat-row"><span>RMSE:</span> <strong>...</strong></div>
+                <div class="stat-row"><span>R² Score:</span> <strong>...</strong></div>
               </div>
             </div>
           </div>
 
-          <!-- Comparison Bar Chart & Validation Image -->
+          <!-- Comparison Bar Chart & R2 Chart -->
           <div class="chart-row two-cols mt-4">
             <div class="chart-card">
               <div class="chart-header">
                 <div>
                   <h3 class="chart-title">Error Metric Comparison (Lower is Better)</h3>
-                  <p class="chart-subtitle">Mean Absolute Error (MAE) and Root Mean Squared Error (RMSE)</p>
+                  <p class="chart-subtitle">Test-period MAE and RMSE across naive baselines and ML candidates</p>
                 </div>
               </div>
               <div class="chart-container" style="height: 320px;">
@@ -526,7 +490,7 @@
               <div class="chart-header">
                 <div>
                   <h3 class="chart-title">R-Squared (R²) Goodness of Fit</h3>
-                  <p class="chart-subtitle">Proportion of future demand variance explained</p>
+                  <p class="chart-subtitle">Out-of-sample variance explained vs naive benchmarks</p>
                 </div>
               </div>
               <div class="chart-container" style="height: 320px;">
@@ -535,11 +499,86 @@
             </div>
           </div>
 
+          <!-- CV, Encoding Ablation & Rolling-Origin Backtesting -->
+          <div class="chart-row two-cols mt-4">
+            <div class="table-card">
+              <div class="table-header">
+                <h3 class="chart-title">Chronological CV &amp; Encoding Ablation</h3>
+                <p class="chart-subtitle" id="cv-period-subtitle">Date-grouped expanding-window validation metrics (fitted strictly on training folds)</p>
+              </div>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Experiment / Model</th>
+                      <th>CV RMSE</th>
+                      <th>CV MAE</th>
+                      <th>CV R²</th>
+                    </tr>
+                  </thead>
+                  <tbody id="cv-encoding-tbody">
+                    <tr><td colspan="4" class="text-center">Loading cross-validation summary...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="table-card">
+              <div class="table-header">
+                <h3 class="chart-title">Rolling-Origin Recursive Backtest</h3>
+                <p class="chart-subtitle" id="backtest-origins-subtitle">Multi-horizon autoregressive forecasts (7, 14, 30 days) vs Seasonal Naive</p>
+              </div>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Horizon</th>
+                      <th>Champion MAE / RMSE</th>
+                      <th>S.Naive MAE / RMSE</th>
+                      <th>vs S.Naive</th>
+                    </tr>
+                  </thead>
+                  <tbody id="backtest-horizon-tbody">
+                    <tr><td colspan="4" class="text-center">Loading rolling-origin backtest results...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Product-Wise Recursive Error Summary -->
+          <div class="table-card mt-4">
+            <div class="table-header flex-between">
+              <div>
+                <h3 class="chart-title">Per-SKU Recursive Backtesting Error Distribution</h3>
+                <p class="chart-subtitle" id="backtest-sku-summary">Loading per-SKU summary across rolling origins...</p>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Stock Code</th>
+                    <th>Tier</th>
+                    <th>Samples</th>
+                    <th>Champion MAE</th>
+                    <th>Champion RMSE</th>
+                    <th>S.Naive RMSE</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="backtest-sku-tbody">
+                  <tr><td colspan="7" class="text-center">Loading per-SKU errors...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
           <!-- Actual vs Predicted Plot -->
           <div class="table-card mt-4">
             <div class="table-header">
-              <h3 class="chart-title">Validation Performance: Unseen Future Demand (Nov 1 - Dec 9, 2011)</h3>
-              <p class="chart-subtitle">Chronological validation split comparing actual recorded sales against model forecasts</p>
+              <h3 class="chart-title" id="actual-vs-predicted-title">Validation Performance: Untouched Test Period</h3>
+              <p class="chart-subtitle" id="actual-vs-predicted-subtitle">Chronological holdout comparing actual recorded sales against baseline and champion forecasts</p>
             </div>
             <div class="p-4 text-center">
               <img src="/graphs/actual_vs_predicted.png" alt="Actual vs Predicted Demand" class="img-responsive rounded shadow-sm">
@@ -548,21 +587,22 @@
 
           <!-- Scientific Methodology Explanations -->
           <div class="methodology-card mt-4">
-            <h3 class="chart-title mb-3">Model Selection & Architecture Rationale</h3>
-            <div class="method-grid">
+            <h3 class="chart-title mb-3">Model Selection &amp; Validation Architecture Rationale</h3>
+            <div class="method-grid" id="performance-methodology-grid">
               <div class="method-item">
-                <h5>1. Chronological Split (No Data Leakage)</h5>
-                <p>Retail sales exhibit strong temporal dependencies. Rather than random k-fold cross-validation, models were trained strictly on observations prior to November 1, 2011, and tested on the subsequent unseen holiday period (Nov 1 – Dec 9, 2011).</p>
+                <h5>1. Date-Grouped Chronological Validation</h5>
+                <p id="method-split-desc">Loading split and cross-validation periods...</p>
               </div>
               <div class="method-item">
-                <h5>2. Feature Engineering Pipeline</h5>
-                <p>Constructed strictly past-looking lag features (lag 1, 7, 14, 30 days), rolling averages (7, 14, 30 days), demand volatility (7-day standard deviation), momentum trend ratios, and calendar indicators (day of week, weekend, month).</p>
+                <h5>2. Causal Feature &amp; Encoding Pipeline</h5>
+                <p id="method-feature-desc">Loading feature and category encoding details...</p>
               </div>
               <div class="method-item">
-                <h5>3. Gradient Boosting Superiority</h5>
-                <p>Gradient Boosting outperformed Linear Regression and Random Forest with the lowest RMSE (71.81) and highest R² (0.325) because decision trees effectively capture non-linear step changes while sequential boosting corrects residual errors from high-demand surge events.</p>
+                <h5>3. Selected Champion &amp; Baseline Benchmark</h5>
+                <p id="method-winner-desc">Loading selected champion rationale...</p>
               </div>
             </div>
+            <div class="method-explanations mt-4" id="model-explanations-list"></div>
           </div>
         </section>
 

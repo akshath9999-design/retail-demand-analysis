@@ -306,7 +306,7 @@ def test_empty_and_invalid_inputs():
 
 
 def test_correct_transformed_feature_count():
-    """Requirement 8 & 10: Passing FEATURE_COLUMNS through build_preprocessor() produces exactly 18 features."""
+    """Requirement 8 & 10: Passing FEATURE_COLUMNS through build_preprocessor() produces NUMERICAL_FEATURES + 1 encoded StockCode."""
     preprocessor = build_preprocessor()
 
     # Create dummy row containing all FEATURE_COLUMNS
@@ -318,7 +318,8 @@ def test_correct_transformed_feature_count():
 
     X_trans = preprocessor.fit_transform(df[FEATURE_COLUMNS], y)
 
-    # 17 numerical + 1 categorical = 18 features (Date is NOT emitted)
-    assert X_trans.shape == (1, 18), f"Expected 18 features, got {X_trans.shape[1]}"
-    assert len(NUMERICAL_FEATURES) == 17
+    # 25 numerical + 1 categorical = 26 features (Date is NOT emitted)
+    expected_cols = len(NUMERICAL_FEATURES) + 1
+    assert X_trans.shape == (1, expected_cols), f"Expected {expected_cols} features, got {X_trans.shape[1]}"
+    assert len(NUMERICAL_FEATURES) == 25
     assert 'Date' not in [t[0] for t in preprocessor.transformers_ if t[0] != 'remainder']
